@@ -80,6 +80,7 @@ class NotificationManagerImpl @Inject constructor(
     companion object {
         const val DEFAULT_CHANNEL_ID = "notifications_default"
         const val BACKUP_RESTORE_CHANNEL_ID = "notifications_backup_restore"
+        const val RECEIVING_WORKER_CHANNEL_ID = "notifications_receiving_worker"
 
         val VIBRATE_PATTERN = longArrayOf(0, 200, 0, 200)
     }
@@ -93,7 +94,7 @@ class NotificationManagerImpl @Inject constructor(
 
     // Required for running workers on Android 12 and older
     override fun getForegroundNotificationForWorkersOnOlderAndroids() =
-        NotificationCompat.Builder(context, DEFAULT_CHANNEL_ID)
+        NotificationCompat.Builder(context, RECEIVING_WORKER_CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notification_foreground_worker_title))
             .setContentText(context.getString(R.string.notification_foreground_worker_text))
             .setShowWhen(false)
@@ -454,39 +455,56 @@ class NotificationManagerImpl @Inject constructor(
      */
     override fun createNotificationChannel(threadId: Long) {
 
-        // Only proceed if the android version supports notification channels, and the channel hasn't
-        // already been created
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || getNotificationChannel(threadId) != null) {
+        // Only proceed if the android version supports notification channels
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return
         }
 
-        val channel = when (threadId) {
-            0L -> NotificationChannel(DEFAULT_CHANNEL_ID, "Default", NotificationManager.IMPORTANCE_HIGH).apply {
-                enableLights(true)
-                lightColor = Color.WHITE
-                enableVibration(true)
-                vibrationPattern = VIBRATE_PATTERN
-            }
-
-            else -> {
-                val conversation = conversationRepo.getConversation(threadId) ?: return
-                val channelId = buildNotificationChannelId(threadId)
-                val title = conversation.getTitle()
-                NotificationChannel(channelId, title, NotificationManager.IMPORTANCE_HIGH).apply {
+        val channels: List<NotificationChannel> = when (threadId) {
+            0L -> listOf(
+                NotificationChannel(
+                    DEFAULT_CHANNEL_ID,
+                    "Default",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
                     enableLights(true)
                     lightColor = Color.WHITE
                     enableVibration(true)
                     vibrationPattern = VIBRATE_PATTERN
-                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                    setSound(prefs.ringtone().get().let(Uri::parse), AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .build())
-                }
+                },
+                NotificationChannel(
+                    RECEIVING_WORKER_CHANNEL_ID,
+                    context.getString(R.string.notification_foreground_worker_channel_name),
+                    NotificationManager.IMPORTANCE_LOW
+                ).apply {
+                    enableLights(false)
+                    enableVibration(false)
+                },
+            )
+
+            else -> {
+                if (getNotificationChannel(threadId) != null) return
+                val conversation = conversationRepo.getConversation(threadId) ?: return
+                val channelId = buildNotificationChannelId(threadId)
+                val title = conversation.getTitle()
+                listOf(
+                    NotificationChannel(channelId, title, NotificationManager.IMPORTANCE_HIGH).apply {
+                        enableLights(true)
+                        lightColor = Color.WHITE
+                        enableVibration(true)
+                        vibrationPattern = VIBRATE_PATTERN
+                        lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                        setSound(prefs.ringtone().get().let(Uri::parse), AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build())
+                    }
+                )
             }
         }
 
-        notificationManager.createNotificationChannel(channel)
+        for (channel in channels)
+            notificationManager.createNotificationChannel(channel)
     }
 
     /**
