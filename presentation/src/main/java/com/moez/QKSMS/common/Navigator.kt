@@ -31,6 +31,7 @@ import android.provider.Telephony
 import dev.octoshrimpy.quik.BuildConfig
 import dev.octoshrimpy.quik.compat.TelephonyCompat
 import dev.octoshrimpy.quik.extensions.resourceExists
+import dev.octoshrimpy.quik.feature.settings.about.AboutActivity
 import dev.octoshrimpy.quik.feature.backup.BackupActivity
 import dev.octoshrimpy.quik.feature.blocking.BlockingActivity
 import dev.octoshrimpy.quik.feature.compose.ComposeActivity
@@ -180,6 +181,11 @@ class Navigator @Inject constructor(
 
     fun showSettings() {
         val intent = Intent(context, SettingsActivity::class.java)
+        startActivity(intent)
+    }
+
+    fun showAbout() {
+        val intent = Intent(context, AboutActivity::class.java)
         startActivity(intent)
     }
 

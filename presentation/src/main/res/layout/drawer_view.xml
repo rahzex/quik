@@ -176,6 +176,21 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/about"
+            style="@style/DrawerRow">
+
+            <ImageView
+                style="@style/DrawerIcon"
+                android:src="@drawable/ic_info_black_24dp"
+                app:tint="?android:attr/textColorSecondary" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                style="@style/DrawerText"
+                android:text="@string/settings_about_title" />
+
+        </LinearLayout>
+
 <!--        <LinearLayout-->
 <!--            android:id="@+id/plus"-->
 <!--            style="@style/DrawerRow">-->

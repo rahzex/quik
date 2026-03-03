@@ -104,6 +104,7 @@ class MainActivity : QkThemedActivity(), MainView {
                 binding.drawer.blocking.clicks().map { NavItem.BLOCKING },
                 binding.drawer.messageUtils.clicks().map { NavItem.MESSAGE_UTILS },
                 binding.drawer.settings.clicks().map { NavItem.SETTINGS },
+                binding.drawer.about.clicks().map { NavItem.ABOUT },
 //                plus.clicks().map { NavItem.PLUS },
 //                help.clicks().map { NavItem.HELP },
                 binding.drawer.invite.clicks().map { NavItem.INVITE }))

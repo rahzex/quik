@@ -41,6 +41,7 @@ import dev.octoshrimpy.quik.feature.qkreply.QkReplyActivityModule
 import dev.octoshrimpy.quik.feature.scheduled.ScheduledActivity
 import dev.octoshrimpy.quik.feature.scheduled.ScheduledActivityModule
 import dev.octoshrimpy.quik.feature.settings.SettingsActivity
+import dev.octoshrimpy.quik.feature.settings.about.AboutActivity
 import dev.octoshrimpy.quik.injection.scope.ActivityScope
 
 @Module
@@ -93,6 +94,10 @@ abstract class ActivityBuilderModule {
     @ActivityScope
     @ContributesAndroidInjector(modules = [])
     abstract fun bindSettingsActivity(): SettingsActivity
+
+    @ActivityScope
+    @ContributesAndroidInjector(modules = [])
+    abstract fun bindAboutActivity(): AboutActivity
 
     @ActivityScope
     @ContributesAndroidInjector(modules = [])
