@@ -402,7 +402,7 @@
 
     <string name="about_title">About</string>
     <string name="about_version_title">Version</string>
-    <string name="about_developer_title">Developer</string>
+    <string name="about_developer_title">Developers</string>
     <string name="about_source_title">Source code</string>
     <string name="about_changelog_title">Changelog</string>
     <string name="about_contact_title">Contact</string>
@@ -461,12 +461,12 @@
     <string name="theme_hex">HEX</string>
     <string name="theme_apply">Apply</string>
 
-    <string name="about_developer" translatable="false">Marcos Jones</string>
-    <string name="about_source" translatable="false">https://github.com/octoshrimpy/quik</string>
-    <string name="about_changelog" translatable="false">https://github.com/octoshrimpy/quik/releases</string>
+    <string name="about_developer">A team of wonderful people from around the world!</string>
+    <string name="about_source" translatable="false">https://github.com/quik-sms/quik</string>
+    <string name="about_changelog" translatable="false">https://github.com/quik-sms/quik/releases</string>
     <string name="about_contact" translatable="false">quik@octo.sh</string>
     <string name="about_license" translatable="false">GNU General Public License v3.0</string>
-    <string name="about_copyright" translatable="false">© 2014–2025</string>
+    <string name="about_copyright" translatable="false">© 2014–2026</string>
 
     <string name="changelog_title" translatable="false">New in QUIK</string>
     <string name="changelog_version" translatable="false">Version %s</string>
