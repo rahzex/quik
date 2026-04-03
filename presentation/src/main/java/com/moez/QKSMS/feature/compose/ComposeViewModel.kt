@@ -924,21 +924,18 @@ class ComposeViewModel @Inject constructor(
                     }
                 }
 
-        // set canSend state depending on if there is text input, an attachment or a schedule set
+        // set canSend state depending on if there is text input or an attachment
         Observables.combineLatest(
-            view.textChangedIntent,     // input message text changed
+            view.textChangedIntent,
             state
-                .distinctUntilChanged { state -> state.attachments }    // attachments changed
-                .map { it.attachments.size },   // number of attachments
-            state.distinctUntilChanged { state -> state.scheduled }    // schedule set or not
-                .map { it.scheduled }
+                .distinctUntilChanged { state -> state.attachments }
+                .map { it.attachments.size }
         )
             .autoDisposable(view.scope())
             .subscribe {
                 newState {
                     copy(
-                        canSend = (it.first.isNotBlank() || (it.second > 0)),
-                        scheduled = it.third
+                        canSend = (it.first.isNotBlank() || (it.second > 0))
                     )
                 }
             }
