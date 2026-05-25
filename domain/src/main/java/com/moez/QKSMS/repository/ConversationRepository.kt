@@ -19,6 +19,7 @@
 package dev.octoshrimpy.quik.repository
 
 import dev.octoshrimpy.quik.model.Conversation
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.Recipient
 import dev.octoshrimpy.quik.model.SearchResult
 import io.reactivex.Completable
@@ -28,6 +29,28 @@ import io.realm.RealmResults
 interface ConversationRepository {
 
     fun getConversations(unreadAtTop: Boolean, archived: Boolean = false): RealmResults<Conversation>
+
+    /**
+     * Returns a filtered, live-updating list of conversations for a specific category tab.
+     *
+     * WHY LIVE-UPDATING?
+     * The returned [RealmResults] is a "live" Realm query result. Any time a conversation
+     * in Realm changes its categoryId (e.g. after the background worker runs or the user
+     * moves a message), the list automatically updates — and because it's observed in the
+     * ViewModel via RxJava, the RecyclerView updates itself without any manual refresh code.
+     *
+     * When [category] == [MessageCategory.ALL], no category filter is applied — all
+     * conversations are returned (same as [getConversations]).
+     *
+     * @param category     The tab the user is currently viewing.
+     * @param unreadAtTop  If true, unread conversations are sorted to the top.
+     * @param archived     If true, only archived conversations are returned.
+     */
+    fun getConversationsByCategory(
+        category: MessageCategory,
+        unreadAtTop: Boolean,
+        archived: Boolean = false
+    ): RealmResults<Conversation>
 
     fun getConversationsSnapshot(unreadAtTop: Boolean): List<Conversation>
 

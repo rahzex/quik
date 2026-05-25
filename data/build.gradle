@@ -35,6 +35,14 @@ android {
     }
 
     namespace 'dev.octoshrimpy.quik.data'
+
+    // Make src/test/assets/ available as a resource directory in JVM unit tests.
+    // This lets ClassLoader.getResourceAsStream("sms_backup_categorized.json") work.
+    sourceSets {
+        test {
+            resources.srcDirs += ['src/test/assets']
+        }
+    }
 }
 
 dependencies {
@@ -71,6 +79,9 @@ dependencies {
     testImplementation "androidx.test:runner:$androidx_testrunner_version"
     testImplementation "junit:junit:$junit_version"
     testImplementation "org.mockito:mockito-core:$mockito_version"
+    // org.json is included in the Android SDK but NOT available in plain JVM unit tests.
+    // We add it explicitly so the corpus test can parse the backup JSON file.
+    testImplementation "org.json:json:20231013"
 
     // coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"

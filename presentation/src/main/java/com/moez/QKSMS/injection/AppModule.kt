@@ -32,6 +32,8 @@ import dagger.Module
 import dagger.Provides
 import dev.octoshrimpy.quik.blocking.BlockingClient
 import dev.octoshrimpy.quik.blocking.BlockingManager
+import dev.octoshrimpy.quik.categorization.SmsCategorizer
+import dev.octoshrimpy.quik.categorization.SmsCategorizerImpl
 import dev.octoshrimpy.quik.common.ViewModelFactory
 import dev.octoshrimpy.quik.common.util.BillingManagerImpl
 import dev.octoshrimpy.quik.common.util.NotificationManagerImpl
@@ -147,6 +149,22 @@ class AppModule(private var application: Application) {
 
     @Provides
     fun blockingClient(manager: BlockingManager): BlockingClient = manager
+
+    /**
+     * Binds the SmsCategorizer interface to its implementation.
+     *
+     * WHY @Provides INSTEAD OF @Binds?
+     * The rest of this module uses @Provides functions (non-abstract). @Binds is slightly
+     * more efficient but requires an abstract module. To stay consistent with the existing
+     * module style we use @Provides here.
+     *
+     * @Singleton ensures only ONE instance is created for the entire app lifetime.
+     * This is important for SmsCategorizerImpl because its precompiled Regex patterns
+     * take a few ms to compile — we don't want to re-create them on every SMS.
+     */
+    @Provides
+    @Singleton
+    fun provideSmsCategorizer(impl: SmsCategorizerImpl): SmsCategorizer = impl
 
     @Provides
     fun changelogManager(manager: ChangelogManagerImpl): ChangelogManager = manager

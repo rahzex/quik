@@ -24,6 +24,7 @@ import androidx.work.Worker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import dev.octoshrimpy.quik.blocking.BlockingClient
+import dev.octoshrimpy.quik.categorization.SmsCategorizer
 import dev.octoshrimpy.quik.interactor.UpdateBadge
 import dev.octoshrimpy.quik.manager.ActiveConversationManager
 import dev.octoshrimpy.quik.manager.NotificationManager
@@ -50,7 +51,8 @@ class InjectionWorkerFactory @Inject constructor(
     private val syncRepo: SyncRepository,
     private val filterRepo: MessageContentFilterRepository,
     private val contactRepo: ContactRepository,
-
+    // Injected so we can pass it to ReceiveSmsWorker and CategorizeAllMessagesWorker
+    private val categorizer: SmsCategorizer,
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -76,6 +78,8 @@ class InjectionWorkerFactory @Inject constructor(
                 instance.updateBadge =  updateBadge
                 instance.filterRepo = filterRepo
                 instance.contactsRepo = contactRepo
+                // Wire the categorizer so every new SMS is auto-classified
+                instance.categorizer = categorizer
             }
             is ReceiveMmsWorker -> {
                 instance.syncRepo = syncRepo
@@ -89,6 +93,11 @@ class InjectionWorkerFactory @Inject constructor(
                 instance.updateBadge = updateBadge
                 instance.filterRepo = filterRepo
                 instance.contactsRepo = contactRepo
+            }
+            // Wire the first-run historical categorization worker
+            is CategorizeAllMessagesWorker -> {
+                instance.categorizer = categorizer
+                instance.prefs = prefs
             }
         }
 

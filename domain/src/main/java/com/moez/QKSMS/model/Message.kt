@@ -83,6 +83,26 @@ open class Message : RealmObject() {
 
     var sendAsGroup: Boolean = false
 
+    /**
+     * Category of this individual message (mirrors its parent Conversation's category).
+     *
+     * Storing the category on the Message as well as the Conversation lets Phase 2
+     * (Finance Dashboard) efficiently query "all TRANSACTIONS messages" directly,
+     * without having to join through Conversation.
+     *
+     * Stored as the enum name string (e.g. "OTP") for the same reason as Conversation.
+     * @Index enables fast filtering when loading the Finance tab in Phase 2.
+     */
+    @Index var categoryId: String = MessageCategory.ALL.name
+
+    /** Typed convenience accessor — converts the string back to the enum. */
+    val category: MessageCategory
+        get() = try {
+            MessageCategory.valueOf(categoryId)
+        } catch (e: IllegalArgumentException) {
+            MessageCategory.ALL
+        }
+
     fun getUri(): Uri {
         if (contentId == 0L)
             return Uri.EMPTY

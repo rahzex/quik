@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulse SMS — Light & Dark</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ══════════════════════════════════════
+   THEME TOKENS
+══════════════════════════════════════ */
+[data-theme="light"] {
+  --bg:          #f4f4f0;
+  --surface:     #ffffff;
+  --surface2:    #f9f9f7;
+  --surface3:    #f0f0ec;
+  --border:      rgba(0,0,0,0.08);
+  --border-md:   rgba(0,0,0,0.12);
+  --text:        #111110;
+  --text-2:      #6b6b67;
+  --text-3:      #a8a8a4;
+  --notch-bg:    #111110;
+  --notch-pill:  #2a2a28;
+  --phone-ring:  #e8e8e4;
+  --dot-color:   rgba(0,0,0,0.06);
+  --shadow-a:    rgba(0,0,0,0.10);
+  --shadow-b:    rgba(0,0,0,0.06);
+  --bubble-bg:   #f7f7f4;
+  --bubble-in-bg: #ffffff;
+  --input-bg:    #f7f7f4;
+}
+
+[data-theme="dark"] {
+  --bg:          #0c0c0c;
+  --surface:     #141414;
+  --surface2:    #111111;
+  --surface3:    #1e1e1e;
+  --border:      rgba(255,255,255,0.07);
+  --border-md:   rgba(255,255,255,0.10);
+  --text:        #d4d4d4;
+  --text-2:      #888888;
+  --text-3:      #555555;
+  --notch-bg:    #080808;
+  --notch-pill:  #1c1c1c;
+  --phone-ring:  #1e1e1e;
+  --dot-color:   rgba(255,255,255,0.025);
+  --shadow-a:    rgba(0,0,0,0.45);
+  --shadow-b:    rgba(0,0,0,0.25);
+  --bubble-bg:   #0e0e0e;
+  --bubble-in-bg:#1a1a1a;
+  --input-bg:    #0e0e0e;
+}
+
+/* shared semantic colours */
+:root {
+  --blue:      #1a56db;
+  --blue-bg-l: #e8f0fe;
+  --blue-bg-d: #161f30;
+  --green:     #1a7f4b;
+  --green-bg-l:#f0faf4;
+  --green-bg-d:#101e14;
+  --red:       #c0392b;
+  --red-bg-l:  #fff0f0;
+  --red-bg-d:  #1e0e0d;
+  --purple:    #7b1fa2;
+  --purple-bg-l:#f3e5f5;
+  --purple-bg-d:#160d1e;
+  --amber:     #b45309;
+  --amber-bg-l:#fffbeb;
+  --amber-bg-d:#1c1205;
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 18px;
+}
+
+/* light accent = blue, dark accent = near-white */
+[data-theme="light"] {
+  --accent:    #1a56db;
+  --accent-bg: #e8f0fe;
+  --accent-fg: #1a3db5;
+  --blue-bg:   var(--blue-bg-l);
+  --green-bg:  var(--green-bg-l);
+  --red-bg:    var(--red-bg-l);
+  --purple-bg: var(--purple-bg-l);
+  --amber-bg:  var(--amber-bg-l);
+}
+[data-theme="dark"] {
+  --accent:    #e8e8e8;
+  --accent-bg: #232323;
+  --accent-fg: #f0f0f0;
+  --blue-bg:   var(--blue-bg-d);
+  --green-bg:  var(--green-bg-d);
+  --red-bg:    var(--red-bg-d);
+  --purple-bg: var(--purple-bg-d);
+  --amber-bg:  var(--amber-bg-d);
+}
+
+/* semantic text colours — brighter in dark for readability */
+[data-theme="light"] {
+  --green-text:  #1a7f4b;
+  --red-text:    #c0392b;
+  --purple-text: #7b1fa2;
+  --amber-text:  #b45309;
+}
+[data-theme="dark"] {
+  --green-text:  #3dab6a;
+  --red-text:    #d9574d;
+  --purple-text: #a06cd5;
+  --amber-text:  #c98a20;
+}
+body {
+  background: var(--bg);
+  font-family: 'Geist', sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 64px;
+  transition: background 0.3s, color 0.3s;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.3s;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 52px;
+  width: 100%;
+  max-width: 1400px;
+}
+
+/* ── page header ── */
+.page-header { text-align: center; }
+
+.wordmark {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.page-title {
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+
+.page-sub {
+  font-size: 14px;
+  color: var(--text-2);
+  font-weight: 300;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+/* ── theme toggle ── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 24px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.toggle-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.toggle-opt svg {
+  width: 14px; height: 14px;
+  stroke: currentColor; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.toggle-opt.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+[data-theme="dark"] .toggle-opt.active { color: #111; }
+
+/* ── section dividers ── */
+.section-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-divider span {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── phone row ── */
+.phones {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.phone-wrap { display: flex; flex-direction: column; align-items: center; }
+
+.phone {
+  width: 320px;
+  background: var(--surface);
+  border-radius: 44px;
+  border: 1px solid var(--border-md);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 6px var(--phone-ring),
+    0 0 0 7px var(--border),
+    0 24px 56px var(--shadow-a),
+    0 6px 16px var(--shadow-b);
+  animation: rise 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  transition: box-shadow 0.3s;
+}
+
+.phone:nth-child(2) { animation-delay: 0.08s; }
+.phone:nth-child(3) { animation-delay: 0.16s; }
+.phone:nth-child(4) { animation-delay: 0.24s; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.phone-notch {
+  height: 30px;
+  background: var(--notch-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notch-bar {
+  width: 80px; height: 10px;
+  background: var(--notch-pill);
+  border-radius: 8px;
+}
+
+.screen-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 13px;
+}
+
+/* shared screen wrapper */
+.screen {
+  background: var(--surface2);
+  display: flex;
+  flex-direction: column;
+  min-height: 680px;
+}
+
+/* ── avatars ── */
+.av {
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500;
+  flex-shrink: 0;
+  font-family: 'Geist Mono', monospace;
+}
+
+/* ── icon btn ── */
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.icon-btn svg {
+  width: 14px; height: 14px;
+  stroke: var(--text-2); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* ══════════════════════════════════════
+   BOTTOM TAB BAR
+══════════════════════════════════════ */
+.tab-bar {
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 0 12px;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.tab-icon {
+  width: 32px; height: 32px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+
+.tab-icon svg {
+  width: 16px; height: 16px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  transition: stroke 0.15s;
+}
+
+.tab-label {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+
+.tab-item.active .tab-icon {
+  background: var(--accent-bg);
+}
+
+.tab-item.active .tab-icon svg {
+  stroke: var(--accent);
+}
+
+.tab-item.active .tab-label {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* ══════════════════════════════════════
+   SCREEN 1 — INBOX (Messages tab active)
+══════════════════════════════════════ */
+.inbox-head {
+  background: var(--surface);
+  padding: 20px 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.inbox-title-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.inbox-title {
+  font-size: 24px; font-weight: 500;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.head-icons { display: flex; gap: 6px; }
+
+.search-bar {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  margin-bottom: 12px;
+}
+
+.search-bar svg {
+  width: 13px; height: 13px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.search-bar span { font-size: 12px; color: var(--text-3); }
+
+.msg-tabs { display: flex; }
+
+.msg-tab {
+  flex: 1; text-align: center;
+  padding: 8px 0;
+  font-size: 12px; font-weight: 400;
+  color: var(--text-2);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.msg-tab.on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
+}
+
+.msg-list { display: flex; flex-direction: column; flex: 1; }
+
+.msg-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: relative; cursor: pointer;
+}
+
+.msg-row.unread { background: var(--surface); }
+[data-theme="light"] .msg-row.unread { background: #fafcff; }
+[data-theme="dark"]  .msg-row.unread { background: #191919; }
+
+.msg-body { flex: 1; min-width: 0; }
+
+.msg-top {
+  display: flex; align-items: baseline;
+  justify-content: space-between; margin-bottom: 2px;
+}
+
+.msg-name { font-size: 14px; font-weight: 400; color: var(--text); }
+.msg-row.unread .msg-name { font-weight: 500; }
+.msg-time { font-size: 10px; color: var(--text-3); font-family: 'Geist Mono', monospace; }
+
+.msg-tag {
+  display: inline-block;
+  font-size: 9px; font-weight: 500;
+  padding: 1.5px 6px; border-radius: 4px;
+  margin-bottom: 2px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.msg-preview {
+  font-size: 13px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.4; font-weight: 300;
+}
+
+.msg-row.unread .msg-preview { font-weight: 400; }
+
+.unread-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%; background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* FAB */
+.screen-rel { position: relative; }
+
+.fab {
+  position: absolute; bottom: 56px; right: 16px;
+  width: 50px; height: 50px;
+  background: var(--accent); border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  cursor: pointer;
+}
+
+.fab svg {
+  width: 17px; height: 17px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+[data-theme="light"] .fab svg { stroke: #fff; }
+[data-theme="dark"]  .fab svg { stroke: #111; }
+
+/* ══════════════════════════════════════
+   SCREEN 2 — THREAD
+══════════════════════════════════════ */
+.thread-head {
+  background: var(--surface);
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.back svg {
+  width: 17px; height: 17px; stroke: var(--text-2); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.thread-info { flex: 1; min-width: 0; }
+.thread-name { font-size: 13px; font-weight: 500; color: var(--text); }
+
+.thread-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 500;
+  padding: 1.5px 7px; border-radius: 20px;
+  margin-top: 2px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.03em;
+}
+
+.bubble-area {
+  background: var(--bubble-bg);
+  padding: 10px 10px;
+  display: flex; flex-direction: column;
+  gap: 8px; flex: 1;
+}
+
+.date-sep {
+  text-align: center; font-size: 11px;
+  color: var(--text-3); font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.08em; margin: 2px 0;
+}
+
+.bubble {
+  max-width: 84%; padding: 9px 11px;
+  border-radius: 14px; font-size: 11.5px;
+  line-height: 1.55; font-weight: 300; color: var(--text);
+}
+
+.bubble.in {
+  background: var(--bubble-in-bg);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+  align-self: flex-start;
+}
+
+.bubble.out {
+  background: var(--accent);
+  border-bottom-right-radius: 3px;
+  align-self: flex-end; font-weight: 400;
+}
+
+[data-theme="light"] .bubble.out { color: #fff; }
+[data-theme="dark"]  .bubble.out { color: #111; }
+
+.bubble-t {
+  font-size: 9.5px; color: var(--text-3);
+  margin-top: 3px; font-family: 'Geist Mono', monospace;
+}
+
+.parsed {
+  border-radius: 8px; padding: 8px 10px; margin-top: 7px;
+}
+
+.parsed-lbl {
+  font-size: 9px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 2px; font-family: 'Geist Mono', monospace;
+}
+
+.parsed-amt {
+  font-size: 17px; font-weight: 500;
+  letter-spacing: -0.02em; line-height: 1;
+}
+
+.parsed-sub { font-size: 9.5px; margin-top: 3px; font-weight: 300; }
+
+.input-bar {
+  background: var(--surface);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.input-field {
+  flex: 1; background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 7px 12px;
+  font-size: 12px; font-family: 'Geist', sans-serif;
+  color: var(--text-3);
+}
+
+.send-btn {
+  width: 38px; height: 38px; background: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.send-btn svg {
+  width: 13px; height: 13px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+[data-theme="light"] .send-btn svg { stroke: #fff; }
+[data-theme="dark"]  .send-btn svg { stroke: #111; }
+
+/* ══════════════════════════════════════
+   SCREEN 3 — FINANCE (Summary)
+══════════════════════════════════════ */
+.summary-top {
+  background: var(--surface);
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-title-row {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 14px;
+}
+
+.summary-title {
+  font-size: 24px; font-weight: 500;
+  letter-spacing: -0.03em; color: var(--text);
+}
+
+.month-switcher {
+  display: flex; background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px; gap: 2px;
+}
+
+.month-opt {
+  padding: 3px 9px; border-radius: 16px;
+  font-size: 10.5px; font-weight: 400;
+  color: var(--text-2); cursor: pointer;
+}
+
+.month-opt.on {
+  background: var(--surface);
+  color: var(--accent); font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 9px;
+}
+
+.stat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 11px;
+  background: var(--surface);
+}
+
+.stat-icon-row {
+  display: flex; align-items: center;
+  gap: 6px; margin-bottom: 6px;
+}
+
+.stat-icon {
+  width: 21px; height: 21px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.stat-icon svg {
+  width: 12px; height: 12px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.stat-label { font-size: 11px; color: var(--text-2); }
+.stat-num { font-size: 22px; font-weight: 500; letter-spacing: -0.03em; line-height: 1; margin-bottom: 2px; }
+.stat-delta { font-size: 10px; font-weight: 400; }
+
+.net-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px;
+  background: var(--surface);
+}
+
+.net-top {
+  display: flex; align-items: baseline;
+  justify-content: space-between; margin-bottom: 9px;
+}
+
+.net-label { font-size: 11px; color: var(--text-2); }
+
+.net-num {
+  font-size: 24px; font-weight: 500;
+  letter-spacing: -0.04em; color: var(--green-text); line-height: 1;
+}
+
+.net-sub { font-size: 11px; color: var(--text-2); margin-left: 5px; }
+
+.progress-track {
+  height: 4px; background: var(--border);
+  border-radius: 2px; overflow: hidden; margin-bottom: 4px;
+}
+
+.progress-fill { height: 4px; background: var(--accent); border-radius: 2px; }
+
+.progress-labels { display: flex; justify-content: space-between; }
+.progress-labels span { font-size: 10px; }
+[data-theme="light"] .progress-spent-lbl { color: var(--blue); }
+[data-theme="dark"]  .progress-spent-lbl { color: var(--text-2); }
+
+.fin-section { padding: 12px 16px 0; }
+
+.sec-title {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--text-3); margin-bottom: 8px;
+}
+
+.acct-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+.acct-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.acct-left { display: flex; align-items: center; gap: 8px; }
+.acct-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.acct-num  { font-size: 9.5px; color: var(--text-3); font-family: 'Geist Mono', monospace; margin-top: 1px; }
+.acct-bal  { font-size: 13px; font-weight: 500; color: var(--green-text); font-family: 'Geist Mono', monospace; }
+
+.reminder-list { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; }
+
+.reminder {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 9px 12px;
+  display: flex; align-items: center; gap: 9px;
+}
+
+.rem-icon {
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.rem-icon svg {
+  width: 14px; height: 14px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.rem-title { font-size: 12px; font-weight: 500; color: var(--text); }
+.rem-meta  { font-size: 10px; color: var(--text-2); margin-top: 1px; font-weight: 300; }
+.rem-amt   { font-size: 12px; font-weight: 500; font-family: 'Geist Mono', monospace; white-space: nowrap; }
+
+/* ══════════════════════════════════════
+   SCREEN 4 — SETTINGS
+══════════════════════════════════════ */
+.settings-head {
+  background: var(--surface);
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-title {
+  font-size: 24px; font-weight: 500;
+  letter-spacing: -0.03em; color: var(--text);
+}
+
+.settings-body { flex: 1; padding-bottom: 8px; }
+
+.settings-section { padding: 14px 16px 0; }
+
+.settings-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 10px;
+}
+
+.settings-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.settings-row:last-child { border-bottom: none; }
+
+.settings-row-icon {
+  width: 32px; height: 32px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-row-icon svg {
+  width: 14px; height: 14px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.settings-row-body { flex: 1; }
+.settings-row-label { font-size: 12.5px; font-weight: 500; color: var(--text); }
+.settings-row-sub   { font-size: 10.5px; color: var(--text-2); margin-top: 1px; font-weight: 300; }
+
+.settings-row-right { display: flex; align-items: center; gap: 6px; }
+
+.settings-chevron svg {
+  width: 13px; height: 13px; stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* toggle switch */
+.toggle {
+  width: 32px; height: 18px; border-radius: 9px;
+  position: relative; flex-shrink: 0;
+}
+
+.toggle.on { background: var(--accent); }
+.toggle.off { background: var(--surface3); border: 1px solid var(--border-md); }
+
+.toggle::after {
+  content: '';
+  position: absolute; top: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%; background: #fff;
+  transition: left 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .toggle.on::after { background: #111; }
+
+.toggle.on::after  { left: 16px; }
+.toggle.off::after { left: 2px; }
+
+/* value badge */
+.val-badge {
+  font-size: 10px; font-weight: 500;
+  color: var(--text-2);
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 6px;
+  font-family: 'Geist Mono', monospace;
+}
+
+/* profile card */
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+
+.profile-av {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent-bg); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 600;
+  flex-shrink: 0;
+}
+
+.profile-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.profile-sub  { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+/* ══════════════════════════════════════
+   FEATURE CARDS
+══════════════════════════════════════ */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 11px; width: 100%;
+}
+
+.feat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 17px;
+  animation: rise 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.feat:nth-child(1) { animation-delay: 0.1s; }
+.feat:nth-child(2) { animation-delay: 0.18s; }
+.feat:nth-child(3) { animation-delay: 0.26s; }
+.feat:nth-child(4) { animation-delay: 0.34s; }
+
+.feat-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px; border: 1px solid var(--border);
+}
+
+.feat-icon svg {
+  width: 15px; height: 15px; fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.feat-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; letter-spacing: -0.01em; color: var(--text); }
+.feat-desc  { font-size: 12px; color: var(--text-2); line-height: 1.6; font-weight: 300; }
+
+/* ── SIM switcher — square badge style (like stock Android) ── */
+.sim-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-md);
+  background: var(--surface3);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+}
+.sim-btn:hover { background: var(--surface2); }
+/* hide old dot/label — we use a number instead */
+.sim-dot { display: none; }
+.sim-label {
+  font-size: 15px; font-weight: 700;
+  font-family: 'Geist Mono', monospace;
+  line-height: 1;
+  transition: color 0.2s;
+}
+/* SIM 1 — neutral default */
+.sim-btn[data-sim="1"] .sim-label { color: var(--text-2); }
+/* SIM 2 — slight teal tint to differentiate */
+.sim-btn[data-sim="2"] .sim-label { color: var(--text-2); }
+/* active state — white border glow */
+.sim-btn.sim-active {
+  border-color: var(--accent);
+}
+/* small SIM indicator dot in top-right corner of button */
+.sim-btn::after {
+  content: '';
+  position: absolute;
+  top: 5px; right: 5px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.sim-btn[data-sim="1"]::after { background: #4a90e2; }
+.sim-btn[data-sim="2"]::after { background: #4ecb84; }
+[data-theme="dark"] .sim-btn[data-sim="1"]::after { background: #7ab3f5; }
+[data-theme="dark"] .sim-btn[data-sim="2"]::after { background: #4ecb84; }
+.sim-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px var(--shadow-a);
+  overflow: visible;
+  min-width: 140px;
+  display: none;
+  z-index: 10;
+}
+.sim-popup.open { display: block; }
+.sim-popup-inner { border-radius: 10px; overflow: hidden; }
+.sim-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 50%;
+  width: 8px; height: 8px;
+  background: var(--surface);
+  border-right: 1px solid var(--border-md);
+  border-bottom: 1px solid var(--border-md);
+  transform: translateX(-50%) rotate(45deg);
+}
+.sim-option {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 13px;
+  cursor: pointer;
+  transition: background 0.12s;
+  color: var(--text);
+}
+.sim-option:hover { background: var(--surface3); }
+.sim-option:first-child { border-bottom: 1px solid var(--border); }
+.sim-option-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.sim-option-name { font-size: 12px; font-weight: 500; }
+.sim-option-sub {
+  font-size: 10px; color: var(--text-2);
+  font-family: 'Geist Mono', monospace;
+  margin-top: 1px; font-weight: 400;
+}
+.sim-option.active-sim { background: var(--surface2); }
+.sim-option.active-sim .sim-option-name::after {
+  content: ' ✓';
+  font-size: 11px;
+}
+
+
+/* ── Settings sub-page (OTP delete config) ── */
+.settings-screen-wrap {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.settings-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface2);
+  transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
+  overflow-y: auto;
+}
+
+.settings-page.main-page { transform: translateX(0); }
+.settings-page.main-page.pushed { transform: translateX(-100%); }
+.settings-page.sub-page { transform: translateX(100%); }
+.settings-page.sub-page.open { transform: translateX(0); }
+
+/* sub-page header */
+.sub-head {
+  background: var(--surface);
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 11px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sub-back {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+
+.sub-back svg {
+  width: 18px; height: 18px; stroke: var(--text-2); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.sub-title {
+  font-size: 16px; font-weight: 500;
+  letter-spacing: -0.02em; color: var(--text);
+}
+
+.sub-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+
+/* duration picker */
+.duration-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.dur-opt {
+  border: 1.5px solid var(--border-md);
+  border-radius: var(--radius);
+  padding: 11px 12px;
+  cursor: pointer;
+  background: var(--surface);
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.dur-opt:hover { background: var(--surface3); }
+
+.dur-opt.selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dur-radio {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.dur-opt.selected .dur-radio {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.dur-opt.selected .dur-radio::after {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.dur-label { font-size: 12px; font-weight: 500; color: var(--text); }
+.dur-sub   { font-size: 10px; color: var(--text-2); margin-top: 1px; }
+
+/* info banner */
+.info-banner {
+  background: var(--amber-bg);
+  border: 1px solid rgba(180,83,9,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex; gap: 9px; align-items: flex-start;
+}
+[data-theme="dark"] .info-banner { border-color: rgba(201,138,32,0.2); }
+
+.info-banner svg {
+  width: 14px; height: 14px; fill: none;
+  stroke: var(--amber-text); stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+.info-banner-text { font-size: 11px; color: var(--amber-text); line-height: 1.5; }
+
+
+/* ── Settings sub-pages phone ── */
+.subpages-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* page divider inside scrollable screen */
+.subpage-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 6px;
+  background: var(--surface2);
+}
+.subpage-divider-line {
+  flex: 1; height: 1px; background: var(--border);
+}
+.subpage-divider-label {
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-3); white-space: nowrap;
+}
+
+/* sub-page shown inline stacked in showcase phone */
+.subpage-block {
+  background: var(--surface2);
+  border-bottom: 2px solid var(--bg);
+}
+
+.subpage-block-head {
+  background: var(--surface);
+  padding: 12px 18px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.subpage-block-back svg {
+  width: 16px; height: 16px; stroke: var(--text-2); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+.subpage-block-title {
+  font-size: 15px; font-weight: 500;
+  letter-spacing: -0.02em; color: var(--text);
+}
+
+/* segment picker (for group messaging MMS/SMS) */
+.seg-picker {
+  display: flex;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px; gap: 2px;
+  margin: 0 18px 12px;
+}
+.seg-opt {
+  flex: 1; text-align: center;
+  padding: 6px 0; border-radius: 16px;
+  font-size: 11px; font-weight: 400;
+  color: var(--text-2); cursor: pointer;
+}
+.seg-opt.on {
+  background: var(--surface);
+  color: var(--accent); font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+/* custom rule card */
+.rule-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  margin-bottom: 7px;
+  display: flex; align-items: center; gap: 10px;
+}
+.rule-badge {
+  font-size: 9px; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px;
+  font-family: "Geist Mono", monospace;
+  letter-spacing: 0.04em; flex-shrink: 0;
+}
+.rule-text { font-size: 12px; color: var(--text); flex: 1; min-width: 0; }
+.rule-sub  { font-size: 10px; color: var(--text-2); margin-top: 1px; }
+
+/* blocked sender row */
+.blocked-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 13px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.blocked-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--red-bg); color: var(--red-text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+}
+.blocked-name { font-size: 12.5px; font-weight: 500; color: var(--text); }
+.blocked-sub  { font-size: 10px; color: var(--text-2); margin-top: 1px; }
+.unblock-btn {
+  font-size: 10px; font-weight: 500;
+  color: var(--red-text); background: var(--red-bg);
+  border: 1px solid var(--border);
+  padding: 3px 9px; border-radius: 6px;
+  flex-shrink: 0; cursor: pointer;
+}
+
+/* spending limit input mock */
+.limit-input-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px;
+}
+.limit-prefix {
+  font-size: 18px; font-weight: 500;
+  color: var(--text-2);
+}
+.limit-input {
+  flex: 1; background: var(--surface3);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 18px; font-weight: 500;
+  color: var(--text); font-family: "Geist Mono", monospace;
+}
+.limit-desc {
+  font-size: 11px; color: var(--text-2);
+  padding: 0 18px 10px; line-height: 1.5;
+}
+
+/* lead time stepper */
+.stepper-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.stepper-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.stepper-controls {
+  display: flex; align-items: center; gap: 12px;
+}
+.stepper-btn {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--surface3); border: 1px solid var(--border-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--text-2);
+}
+.stepper-val {
+  font-size: 15px; font-weight: 600;
+  color: var(--text); font-family: "Geist Mono", monospace;
+  min-width: 32px; text-align: center;
+}
+
+/* char counter preview */
+.composer-mock {
+  margin: 0 18px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.composer-text {
+  font-size: 12px; color: var(--text-2); line-height: 1.5;
+  margin-bottom: 6px;
+}
+.composer-meta {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-3);
+  font-family: "Geist Mono", monospace;
+}
+.composer-meta span.accent { color: var(--accent); }
+
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── page header ── -->
+  <div class="page-header">
+    <div class="wordmark">Pulse SMS</div>
+    <div class="page-title">Messages · Finance · Settings</div>
+    <div class="page-sub">Notion-calm · three-tab navigation · light &amp; dark</div>
+    <div class="theme-toggle" id="themeToggle">
+      <div class="toggle-opt active" data-t="light" id="lightOpt">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>
+        Light
+      </div>
+      <div class="toggle-opt" data-t="dark" id="darkOpt">
+        <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z"/></svg>
+        Dark
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════
+       PHONE ROW
+  ═══════════════════════════ -->
+  <div class="phones">
+
+    <!-- PHONE 1: MESSAGES TAB -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen screen-rel" style="padding:0;min-height:560px;">
+          <!-- inbox header -->
+          <div class="inbox-head">
+            <div class="inbox-title-row">
+              <span class="inbox-title">Messages</span>
+              <div class="head-icons">
+                <div class="icon-btn">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <div class="icon-btn">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+                </div>
+              </div>
+            </div>
+            <div class="search-bar">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>Search messages…</span>
+            </div>
+            <div class="msg-tabs">
+              <div class="msg-tab on">All</div>
+              <div class="msg-tab">Personal</div>
+              <div class="msg-tab">Txn</div>
+              <div class="msg-tab">OTP</div>
+            </div>
+          </div>
+
+          <div class="msg-list">
+            <div class="msg-row unread">
+              <div class="av" style="width:44px;height:44px;background:var(--accent-bg);color:var(--accent);">R</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">Rohit</span><span class="msg-time">9:41</span></div>
+                <div class="msg-preview">Bhai aaj aayega na? Let me know</div>
+              </div>
+              <div class="unread-dot"></div>
+            </div>
+            <div class="msg-row unread">
+              <div class="av" style="width:44px;height:44px;background:var(--surface3);color:var(--text-2);font-size:9px;">HDFC</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">VM-HDFCBK</span><span class="msg-time">8:12</span></div>
+                <div class="msg-tag" style="background:var(--green-bg);color:#155731;">₹4,200 debited</div>
+                <div class="msg-preview">Acct XX4821 via UPI ref 428192811</div>
+              </div>
+              <div class="unread-dot"></div>
+            </div>
+            <div class="msg-row">
+              <div class="av" style="width:44px;height:44px;background:var(--purple-bg);color:var(--purple-text);font-size:9px;">OTP</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">AM-PAYTMB</span><span class="msg-time">7:55</span></div>
+                <div class="msg-tag" style="background:var(--purple-bg);color:var(--purple-text);">OTP · 10 min</div>
+                <div class="msg-preview">Your OTP is 847291. Do not share.</div>
+              </div>
+            </div>
+            <div class="msg-row">
+              <div class="av" style="width:44px;height:44px;background:var(--amber-bg);color:var(--amber-text);font-size:9px;">SWG</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">AD-SWIGGY</span><span class="msg-time">Tue</span></div>
+                <div class="msg-preview">50% off your next order. Use SAVE50!</div>
+              </div>
+            </div>
+            <div class="msg-row">
+              <div class="av" style="width:44px;height:44px;background:var(--green-bg);color:#155731;">M</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">Maa</span><span class="msg-time">Mon</span></div>
+                <div class="msg-preview">Kha liya? Ghar kab aa raha hai?</div>
+              </div>
+            </div>
+            <div class="msg-row">
+              <div class="av" style="width:44px;height:44px;background:var(--surface3);color:var(--text-2);font-size:9px;">ICICI</div>
+              <div class="msg-body">
+                <div class="msg-top"><span class="msg-name">VM-ICICIB</span><span class="msg-time">Mon</span></div>
+                <div class="msg-tag" style="background:var(--green-bg);color:#155731;">₹12,000 credited</div>
+                <div class="msg-preview">Acct XX9934 NEFT from Rahul Sharma</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- bottom tab bar — Messages active -->
+          <div class="tab-bar" style="margin-top:auto;">
+            <div class="tab-item active">
+              <div class="tab-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <span class="tab-label">Messages</span>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              </div>
+              <span class="tab-label">Finance</span>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>
+              </div>
+              <span class="tab-label">Settings</span>
+            </div>
+          </div>
+
+          <!-- FAB -->
+          <div class="fab">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="screen-lbl">Messages</div>
+    </div>
+
+    <!-- PHONE 2: THREAD (Messages sub-screen) -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:560px;">
+          <div class="thread-head">
+            <div class="back"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+            <div class="av" style="width:36px;height:36px;background:var(--surface3);color:var(--text-2);font-size:9px;">HD</div>
+            <div class="thread-info">
+              <div class="thread-name">VM-HDFCBK</div>
+              <div class="thread-badge" style="background:var(--green-bg);color:#155731;">Transaction</div>
+            </div>
+            <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg></div>
+          </div>
+
+          <div class="bubble-area" style="flex:1;">
+            <div class="date-sep">Today · May 23</div>
+            <div>
+              <div class="bubble in">
+                Acct XX4821 debited ₹4,200.00 on 23-May via UPI ref 428192811. Avl bal ₹38,421.
+                <div class="parsed" style="background:var(--red-bg);">
+                  <div class="parsed-lbl" style="color:var(--red-text);">Debit detected</div>
+                  <div class="parsed-amt" style="color:var(--red-text);">− ₹4,200</div>
+                  <div class="parsed-sub" style="color:var(--red-text);opacity:0.7;">UPI · Ref 428192811 · Bal ₹38,421</div>
+                </div>
+              </div>
+              <div class="bubble-t">8:12 AM</div>
+            </div>
+            <div class="date-sep">Yesterday · May 22</div>
+            <div>
+              <div class="bubble in">
+                Acct XX4821 credited ₹12,000.00. NEFT from RAHUL SHARMA. Avl bal ₹42,621.
+                <div class="parsed" style="background:var(--green-bg);">
+                  <div class="parsed-lbl" style="color:var(--green-text);">Credit detected</div>
+                  <div class="parsed-amt" style="color:var(--green-text);">+ ₹12,000</div>
+                  <div class="parsed-sub" style="color:var(--green-text);opacity:0.7;">NEFT · from Rahul Sharma</div>
+                </div>
+              </div>
+              <div class="bubble-t">2:30 PM</div>
+            </div>
+            <div>
+              <div class="bubble in">Your HDFC card bill of ₹8,342 is due on 01-Jun-2026.</div>
+              <div class="bubble-t">11:00 AM</div>
+            </div>
+          </div>
+
+          <div class="input-bar">
+            <div class="sim-btn" id="simBtn" data-sim="1" onclick="toggleSimPopup(event)">
+              <div class="sim-popup" id="simPopup">
+                <div class="sim-popup-inner">
+                  <div class="sim-option active-sim" onclick="selectSim(event,1)">
+                    <div class="sim-option-dot" style="background:#4a90e2;"></div>
+                    <div>
+                      <div class="sim-option-name">SIM 1</div>
+                      <div class="sim-option-sub">Airtel · +91 98765</div>
+                    </div>
+                  </div>
+                  <div class="sim-option" onclick="selectSim(event,2)">
+                    <div class="sim-option-dot" style="background:#4ecb84;"></div>
+                    <div>
+                      <div class="sim-option-name">SIM 2</div>
+                      <div class="sim-option-sub">Jio · +91 70123</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="sim-dot"></div>
+              <span class="sim-label">1</span>
+            </div>
+            <div class="input-field">Reply…</div>
+            <div class="send-btn"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Thread</div>
+    </div>
+
+    <!-- PHONE 3: FINANCE TAB -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:560px;">
+          <div class="summary-top">
+            <div class="summary-title-row">
+              <span class="summary-title">Finance</span>
+              <div class="month-switcher">
+                <div class="month-opt on">May</div>
+                <div class="month-opt">Apr</div>
+                <div class="month-opt">Mar</div>
+              </div>
+            </div>
+            <div class="stat-grid">
+              <div class="stat-card">
+                <div class="stat-icon-row">
+                  <div class="stat-icon" style="background:var(--red-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--red-text);"><polyline points="7 17 17 7"/><polyline points="7 7 17 7 17 17"/></svg>
+                  </div>
+                  <span class="stat-label">Spent</span>
+                </div>
+                <div class="stat-num" style="color:var(--red-text);">₹24.1k</div>
+                <div class="stat-delta" style="color:var(--red-text);">↑ 12% vs Apr</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon-row">
+                  <div class="stat-icon" style="background:var(--green-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--green-text);"><polyline points="7 7 17 17"/><polyline points="17 7 17 17 7 17"/></svg>
+                  </div>
+                  <span class="stat-label">Received</span>
+                </div>
+                <div class="stat-num" style="color:var(--green-text);">₹36.0k</div>
+                <div class="stat-delta" style="color:var(--green-text);">3 credits</div>
+              </div>
+            </div>
+            <div class="net-card">
+              <div class="net-top">
+                <span class="net-label">Net saved</span>
+                <div style="display:flex;align-items:baseline;gap:5px;">
+                  <span class="net-num">+₹11,900</span>
+                  <span class="net-sub">this month</span>
+                </div>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:40%;"></div></div>
+              <div class="progress-labels">
+                <span class="progress-spent-lbl">Spent 40%</span>
+                <span style="color:var(--green-text);">Saved 60%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="fin-section">
+            <div class="sec-title">Accounts</div>
+            <div class="acct-list">
+              <div class="acct-card">
+                <div class="acct-left">
+                  <div class="av" style="width:34px;height:34px;background:var(--accent-bg);color:var(--accent);font-size:9px;">HD</div>
+                  <div><div class="acct-name">HDFC Bank</div><div class="acct-num">·· 4821</div></div>
+                </div>
+                <div class="acct-bal">₹38,421</div>
+              </div>
+              <div class="acct-card">
+                <div class="acct-left">
+                  <div class="av" style="width:34px;height:34px;background:var(--purple-bg);color:var(--purple-text);font-size:9px;">IC</div>
+                  <div><div class="acct-name">ICICI Bank</div><div class="acct-num">·· 9934</div></div>
+                </div>
+                <div class="acct-bal">₹12,840</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fin-section">
+            <div class="sec-title">Upcoming</div>
+            <div class="reminder-list">
+              <div class="reminder">
+                <div class="rem-icon" style="background:var(--red-bg);">
+                  <svg viewBox="0 0 24 24" style="stroke:var(--red-text);"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                </div>
+                <div style="flex:1;"><div class="rem-title">HDFC card bill</div><div class="rem-meta">Due Jun 1 · 8 days</div></div>
+                <div class="rem-amt" style="color:var(--red-text);">₹8,342</div>
+              </div>
+              <div class="reminder">
+                <div class="rem-icon" style="background:var(--accent-bg);">
+                  <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><polyline points="22 2 11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </div>
+                <div style="flex:1;"><div class="rem-title">IndiGo 6E-441</div><div class="rem-meta">May 28 · DEL→BOM · 4 days</div></div>
+                <div class="rem-amt" style="color:var(--text-2);font-size:10px;">06:45</div>
+              </div>
+              <div class="reminder">
+                <div class="rem-icon" style="background:var(--amber-bg);">
+                  <svg viewBox="0 0 24 24" style="stroke:var(--amber-text);"><path d="M1.5 8.5c5.667-5.333 15.333-5.333 21 0"/><path d="M5 12c4-3.333 10-3.333 14 0"/><path d="M8.5 15.5c2-1.667 5-1.667 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+                </div>
+                <div style="flex:1;"><div class="rem-title">Jio recharge</div><div class="rem-meta">Due May 30 · 6 days</div></div>
+                <div class="rem-amt" style="color:var(--amber-text);">₹599</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-bar" style="margin-top:auto;">
+            <div class="tab-item">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <span class="tab-label">Messages</span>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+              <span class="tab-label">Finance</span>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg></div>
+              <span class="tab-label">Settings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-lbl">Finance</div>
+    </div>
+
+    <!-- PHONE 4: SETTINGS TAB -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:560px;display:flex;flex-direction:column;">
+          <div class="settings-head">
+            <div class="settings-title">Settings</div>
+          </div>
+
+          <div class="settings-body" style="overflow-y:auto;flex:1;">
+
+            <!-- Messaging -->
+            <div class="settings-section">
+              <div class="sec-title">Messaging</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--accent-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Default SMS app</div>
+                    <div class="settings-row-sub">Set Pulse as default handler</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Delivery reports</div>
+                    <div class="settings-row-sub">Show when SMS is delivered</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Character counter</div>
+                    <div class="settings-row-sub">Show count while composing</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Group messaging</div>
+                    <div class="settings-row-sub">Individual SMS</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Categorisation -->
+            <div class="settings-section">
+              <div class="sec-title">Categorisation</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--accent-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Auto-categorise</div>
+                    <div class="settings-row-sub">Sort SMS by type automatically</div>
+                  </div>
+                  <div class="toggle on"></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--blue-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Custom rules</div>
+                    <div class="settings-row-sub">3 active rules</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--red-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--red-text);"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Blocked senders</div>
+                    <div class="settings-row-sub">2 blocked</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Unknown senders</div>
+                    <div class="settings-row-sub">Auto-move to separate folder</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- OTP -->
+            <div class="settings-section">
+              <div class="sec-title">OTP</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--purple-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--purple-text);"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Auto-copy OTP</div>
+                    <div class="settings-row-sub">Copy to clipboard on arrival</div>
+                  </div>
+                  <div class="toggle on"></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">OTP notification timeout</div>
+                    <div class="settings-row-sub">Dismiss after</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge">10 min</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row" onclick="openOtpDelete()" style="cursor:pointer;">
+                  <div class="settings-row-icon" style="background:var(--red-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--red-text);"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Auto-delete OTPs</div>
+                    <div class="settings-row-sub">Remove expired OTPs automatically</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge" id="otpDeleteBadge">7 days</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Finance -->
+            <div class="settings-section">
+              <div class="sec-title">Finance</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--green-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--green-text);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Bill reminder lead time</div>
+                    <div class="settings-row-sub">Notify before due date</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge">3 days</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--amber-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--amber-text);"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Spending alerts</div>
+                    <div class="settings-row-sub">Limit ₹25,000 / month</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Tracked accounts</div>
+                    <div class="settings-row-sub">2 active bank accounts</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Appearance -->
+            <div class="settings-section">
+              <div class="sec-title">Appearance</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Theme</div>
+                    <div class="settings-row-sub">Light or dark</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge">Light</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Text size</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge">Medium</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Privacy & Security -->
+            <div class="settings-section">
+              <div class="sec-title">Privacy & Security</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--green-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--green-text);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">On-device only</div>
+                    <div class="settings-row-sub">No data leaves your phone</div>
+                  </div>
+                  <div class="toggle on"></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">App lock</div>
+                    <div class="settings-row-sub">PIN or biometric</div>
+                  </div>
+                  <div class="toggle off"></div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Hide message preview</div>
+                    <div class="settings-row-sub">In lock screen notifications</div>
+                  </div>
+                  <div class="toggle off"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backup -->
+            <div class="settings-section" style="padding-bottom:14px;">
+              <div class="sec-title">Backup</div>
+              <div class="settings-group">
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--blue-bg);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Auto backup</div>
+                    <div class="settings-row-sub">Schedule local backups</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="val-badge">Weekly</div>
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+                <div class="settings-row">
+                  <div class="settings-row-icon" style="background:var(--surface3);">
+                    <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </div>
+                  <div class="settings-row-body">
+                    <div class="settings-row-label">Export messages</div>
+                    <div class="settings-row-sub">Save as JSON or CSV</div>
+                  </div>
+                  <div class="settings-row-right">
+                    <div class="settings-chevron"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /settings-body -->
+
+          <div class="tab-bar" style="margin-top:auto;">
+            <div class="tab-item">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+              <span class="tab-label">Messages</span>
+            </div>
+            <div class="tab-item">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+              <span class="tab-label">Finance</span>
+            </div>
+            <div class="tab-item active">
+              <div class="tab-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg></div>
+              <span class="tab-label">Settings</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-lbl">Settings</div>
+    </div>
+
+
+    <!-- SETTINGS SUB-PAGE PHONES START -->
+    
+    <!-- DEFAULT SMS APP -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Default SMS App</span>
+          </div>
+          
+  <div style="font-size:12px;color:var(--text-2);line-height:1.6;padding:10px 18px 4px;">Pulse needs to be set as the default SMS app to send and receive messages.</div>
+  <div style="padding:4px 18px 14px;display:flex;flex-direction:column;gap:8px;">
+    <div style="background:var(--accent-bg);border:1px solid var(--border-md);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Pulse SMS</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Not set as default</div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1.5px solid var(--accent);padding:5px 12px;border-radius:8px;cursor:pointer;">Set default</div>
+    </div>
+    <div style="background:var(--surface3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;opacity:0.55;">
+      <div style="width:36px;height:36px;border-radius:11px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:600;color:var(--text-2);">MSG</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Android Messages</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Current default</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-3);font-family:'Geist Mono',monospace;">active</div>
+    </div>
+  </div>
+  <div style="margin:10px 18px 0;background:var(--amber-bg);border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--amber-text);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:11px;color:var(--amber-text);line-height:1.5;">Changing the default app will redirect all incoming SMS to Pulse.</span>
+    </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Default SMS App</div>
+    </div>
+
+    <!-- DELIVERY REPORTS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Delivery Reports</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Configuration</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Enable delivery reports</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Request confirmation from carrier</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Show in conversation</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Display 'Delivered' under sent bubbles</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Notify on failure</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Alert when delivery fails</div>
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Preview</div>
+  <div style="margin:0 18px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;">
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="background:var(--accent);color:#fff;border-radius:12px;border-bottom-right-radius:3px;padding:8px 11px;font-size:12px;align-self:flex-end;max-width:75%;font-weight:400;">Hey, are you free tonight?</div>
+      <div style="font-size:10px;color:var(--text-3);text-align:right;font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:flex-end;gap:4px;">
+        <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;"><polyline points="20 6 9 17 4 12"/></svg>
+        Delivered · 9:42 AM
+      </div>
+    </div>
+  </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Delivery Reports</div>
+    </div>
+
+    <!-- CHARACTER COUNTER -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Character Counter</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Configuration</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Show counter while typing</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Appears after 50 characters</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Show segment count</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Each SMS = 160 chars (1 segment)</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Preview</div>
+  <div style="margin:0 18px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;">
+    <div style="font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:8px;">Hey, are you coming to the party tonight? Let me know by 6pm so I can confirm the booking for us</div>
+    <div style="height:1px;background:var(--border);margin-bottom:7px;"></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);font-family:'Geist Mono',monospace;">
+      <span style="color:var(--text-2);">2 segments</span>
+      <span><span style="color:var(--accent);font-weight:600;">96</span> / 160</span>
+    </div>
+    <div style="height:3px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;">
+      <div style="height:3px;width:60%;background:var(--accent);border-radius:2px;"></div>
+    </div>
+  </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Character Counter</div>
+    </div>
+
+    <!-- GROUP MESSAGING -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Group Messaging</span>
+          </div>
+          
+  <div style="font-size:12px;color:var(--text-2);line-height:1.6;padding:10px 18px 4px;">Choose how messages to multiple recipients are sent.</div>
+  <div style="margin:4px 18px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:11px;padding:12px 13px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--accent-bg);">
+      <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--accent);"></div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Individual SMS</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Each recipient gets a separate message. Replies are private.</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:12px 13px;cursor:pointer;">
+      <div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border-md);flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Group MMS</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">All recipients see each other and can reply to the group.</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin:10px 18px 0;background:var(--amber-bg);border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--amber-text);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:11px;color:var(--amber-text);line-height:1.5;">Group MMS may incur additional carrier charges depending on your plan.</span>
+    </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Group Messaging</div>
+    </div>
+
+    <!-- CUSTOM RULES -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Custom Rules</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Active rules · 3</div>
+  <div style="margin:0 18px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--green-bg);color:var(--green-text);font-family:'Geist Mono',monospace;letter-spacing:0.04em;flex-shrink:0;">TXN</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">sender contains "PAYTM"</div>
+        <div style="font-size:10px;color:var(--text-2);margin-top:1px;">→ Transaction</div>
+      </div>
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div><div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple-text);font-family:'Geist Mono',monospace;letter-spacing:0.04em;flex-shrink:0;">OTP</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">body contains "verification code"</div>
+        <div style="font-size:10px;color:var(--text-2);margin-top:1px;">→ OTP</div>
+      </div>
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div><div style="display:flex;align-items:center;gap:10px;padding:11px 13px;">
+      <div style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--amber-bg);color:var(--amber-text);font-family:'Geist Mono',monospace;letter-spacing:0.04em;flex-shrink:0;">PROMO</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">body contains "off", "sale"</div>
+        <div style="font-size:10px;color:var(--text-2);margin-top:1px;">→ Promotional</div>
+      </div>
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+  <div style="margin:0 18px;display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;">
+    <div style="width:26px;height:26px;border-radius:7px;background:var(--accent-bg);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    <span style="font-size:13px;font-weight:500;color:var(--accent);">Add new rule</span>
+  </div>
+  <div style="margin:10px 18px 0;background:var(--accent-bg);border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:11px;color:var(--accent);line-height:1.5;">Rules are matched in order. First matching rule wins.</span>
+    </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Custom Rules</div>
+    </div>
+
+    <!-- BLOCKED SENDERS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Blocked Senders</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Blocked · 2</div>
+  <div style="margin:0 18px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--red-bg);color:var(--red-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">+9</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">+91 99887 12345</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Blocked · Spam</div>
+      </div>
+      <div style="font-size:10px;font-weight:500;color:var(--red-text);background:var(--red-bg);border:1px solid var(--border);padding:3px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;">Unblock</div>
+    </div><div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--red-bg);color:var(--red-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">AD</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">AD-UNKWN</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Blocked · Promotional</div>
+      </div>
+      <div style="font-size:10px;font-weight:500;color:var(--red-text);background:var(--red-bg);border:1px solid var(--border);padding:3px 9px;border-radius:6px;cursor:pointer;white-space:nowrap;">Unblock</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:400;flex-shrink:0;">+</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--accent);">Block a sender</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;">Add number or sender ID</div>
+      </div>
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Filter options</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--red-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Block unknown numbers</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Numbers not in your contacts</div>
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Block messages with links</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">From non-contacts</div>
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Blocked Senders</div>
+    </div>
+
+    <!-- UNKNOWN SENDERS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Unknown Senders</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Folder settings</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Separate unknown senders</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Move to a dedicated folder</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Silence notifications</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">No alerts from unknown senders</div>
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Filter links</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Warn before opening URLs from unknowns</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Filter level</div>
+  <div style="margin:0 18px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--accent-bg);">
+      <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:7px;height:7px;border-radius:50%;background:var(--accent);"></div></div>
+      <div><div style="font-size:12.5px;font-weight:500;color:var(--text);">Strict</div><div style="font-size:11px;color:var(--text-2);">Any number not in contacts</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;cursor:pointer;">
+      <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border-md);flex-shrink:0;"></div>
+      <div><div style="font-size:12.5px;font-weight:500;color:var(--text);">Lenient</div><div style="font-size:11px;color:var(--text-2);">Only numbers with no prior messages</div></div>
+    </div>
+  </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Unknown Senders</div>
+    </div>
+
+    <!-- OTP NOTIFICATION TIMEOUT -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">OTP Notification Timeout</span>
+          </div>
+          
+  <div style="font-size:12px;color:var(--text-2);line-height:1.6;padding:10px 18px 4px;">OTP notifications will be automatically dismissed after the selected time.</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;font-weight:500;color:var(--text);">Dismiss after</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--surface3);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-2);">−</div>
+        <span style="font-size:15px;font-weight:600;color:var(--text);font-family:'Geist Mono',monospace;min-width:52px;text-align:center;">10 min</span>
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--surface3);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-2);">+</div>
+      </div>
+    </div>
+  <div style="height:1px;"></div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Additional options</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Clear from notification shade</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Remove from system tray after timeout</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Keep OTP in message list</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Don't delete — only dismiss notification</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  </div>
+  <div style="margin:10px 18px 0;background:var(--amber-bg);border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--amber-text);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:11px;color:var(--amber-text);line-height:1.5;">OTPs from banking apps typically expire within 30 seconds to 10 minutes.</span>
+    </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">OTP Notification Timeout</div>
+    </div>
+
+    <!-- BILL REMINDER LEAD TIME -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Bill Reminder Lead Time</span>
+          </div>
+          
+  <div style="font-size:12px;color:var(--text-2);line-height:1.6;padding:10px 18px 4px;">Get notified this many days before a bill, recharge, or EMI is due.</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;font-weight:500;color:var(--text);">Remind me</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--surface3);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-2);">−</div>
+        <span style="font-size:15px;font-weight:600;color:var(--text);font-family:'Geist Mono',monospace;min-width:52px;text-align:center;">3 days</span>
+        <div style="width:28px;height:28px;border-radius:8px;background:var(--surface3);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text-2);">+</div>
+      </div>
+    </div>
+  <div style="height:1px;"></div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Applies to</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--green-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Credit card bills</div>
+        
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Mobile recharges</div>
+        
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Loan EMIs</div>
+        
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Utility bills</div>
+        
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  </div>
+  <div style="margin:10px 18px 0;background:var(--accent-bg);border:1px solid rgba(0,0,0,0.06);border-radius:10px;padding:10px 12px;display:flex;gap:8px;align-items:flex-start;">
+      <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:var(--accent);fill:none;stroke-width:1.75;stroke-linecap:round;flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span style="font-size:11px;color:var(--accent);line-height:1.5;">Reminders are detected from SMS automatically — no manual entry needed.</span>
+    </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Bill Reminder Lead Time</div>
+    </div>
+
+    <!-- SPENDING ALERTS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;overflow-y:auto;">
+          <!-- sub-page header -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;letter-spacing:-0.02em;color:var(--text);">Spending Alerts</span>
+          </div>
+          
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Monthly spending limit</div>
+  <div style="margin:0 18px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:22px;font-weight:400;color:var(--text-2);">₹</span>
+      <div style="flex:1;background:var(--surface3);border:1.5px solid var(--border-md);border-radius:10px;padding:10px 13px;font-size:20px;font-weight:500;color:var(--text);font-family:'Geist Mono',monospace;letter-spacing:-0.02em;">25,000</div>
+    </div>
+    <div style="font-size:11px;color:var(--text-2);">Alert when debit transactions this month exceed this amount.</div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">Alert thresholds</div>
+  <div style="margin:0 18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);">
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--amber-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--amber-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Alert at 80% of limit</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Early warning before hitting limit</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--amber-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--amber-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Alert at 100% of limit</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">When limit is reached</div>
+      </div>
+      <div class="toggle on"></div>
+    </div>
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--green-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);">Per-account alerts</div>
+        <div style="font-size:11px;color:var(--text-2);margin-top:1px;font-weight:300;">Set separate limits per bank</div>
+      </div>
+      <div class="toggle off"></div>
+    </div>
+  </div>
+  <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);padding:14px 18px 6px;">This month</div>
+  <div style="margin:0 18px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+      <span style="font-size:12px;color:var(--text-2);">Spent so far</span>
+      <span style="font-size:16px;font-weight:600;color:var(--red-text);font-family:'Geist Mono',monospace;">₹24,100</span>
+    </div>
+    <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:5px;">
+      <div style="height:4px;width:96%;background:var(--red-text);border-radius:2px;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;">
+      <span style="color:var(--red-text);">96% of ₹25,000 limit</span>
+      <span style="color:var(--text-3);">₹900 remaining</span>
+    </div>
+  </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Spending Alerts</div>
+    </div>
+
+    <!-- SETTINGS SUB-PAGE PHONES END -->
+
+  </div><!-- /phones -->
+
+  <!-- feature strip -->
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon" style="background:var(--accent-bg);">
+        <svg viewBox="0 0 24 24" style="stroke:var(--accent);"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+      </div>
+      <div class="feat-title">Auto-categorisation</div>
+      <div class="feat-desc">Regex + sender-ID rules sort every SMS into Personal, Txn, Promo, or OTP — instantly, offline.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon" style="background:var(--green-bg);">
+        <svg viewBox="0 0 24 24" style="stroke:var(--green-text);"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+      <div class="feat-title">Parsed transactions</div>
+      <div class="feat-desc">Debit and credit amounts surface inline in every thread — no digging through raw SMS text.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon" style="background:var(--red-bg);">
+        <svg viewBox="0 0 24 24" style="stroke:var(--red-text);"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </div>
+      <div class="feat-title">Smart reminders</div>
+      <div class="feat-desc">Bills, flights, and recharges detected and surfaced in Finance before they're due.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon" style="background:var(--surface3);">
+        <svg viewBox="0 0 24 24" style="stroke:var(--text-2);"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div class="feat-title">Fully offline</div>
+      <div class="feat-desc">Zero internet required. All classification runs on-device. No data leaves your phone.</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+  const html = document.documentElement;
+  const lightOpt = document.getElementById('lightOpt');
+  const darkOpt  = document.getElementById('darkOpt');
+
+  function setTheme(t) {
+    html.setAttribute('data-theme', t);
+    lightOpt.classList.toggle('active', t === 'light');
+    darkOpt.classList.toggle('active',  t === 'dark');
+    // update the val-badge in settings to reflect
+    const valBadge = document.querySelector('.val-badge');
+    if (valBadge) valBadge.textContent = t === 'light' ? 'Light' : 'Dark';
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', e => {
+    const opt = e.target.closest('.toggle-opt');
+    if (opt) setTheme(opt.dataset.t);
+  });
+</script>
+
+<script>
+  // SIM switcher logic
+  function toggleSimPopup(e) {
+    e.stopPropagation();
+    const popup = document.getElementById('simPopup');
+    popup.classList.toggle('open');
+  }
+
+  function selectSim(e, simNum) {
+    e.stopPropagation();
+    const btn   = document.getElementById('simBtn');
+    const popup = document.getElementById('simPopup');
+
+    // update data-sim (drives CSS dot/label colour)
+    btn.setAttribute('data-sim', simNum);
+
+    // update label text
+    btn.querySelector('.sim-label').textContent = '' + simNum;
+
+    // update active-sim highlight in popup
+    popup.querySelectorAll('.sim-option').forEach((opt, i) => {
+      opt.classList.toggle('active-sim', i + 1 === simNum);
+    });
+
+    // update popup dot colours to match theme-aware values
+    const dotColors = {
+      1: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() === '#e8e8e8'
+          ? '#7ab3f5' : '#4a90e2',
+      2: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() === '#e8e8e8'
+          ? '#4ecb84' : '#1a9e6e'
+    };
+    // just close
+    popup.classList.remove('open');
+  }
+
+  // close popup when clicking outside
+  document.addEventListener('click', () => {
+    const popup = document.getElementById('simPopup');
+    if (popup) popup.classList.remove('open');
+  });
+</script>
+
+
+<script>
+  function openOtpDelete() {
+    document.getElementById('settingsMain').classList.add('pushed');
+    document.getElementById('otpDeletePage').classList.add('open');
+  }
+
+  function closeOtpDelete() {
+    document.getElementById('settingsMain').classList.remove('pushed');
+    document.getElementById('otpDeletePage').classList.remove('open');
+  }
+
+  function selectDuration(el, val, label) {
+    document.querySelectorAll('.dur-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('otpDeleteBadge').textContent = label;
+  }
+
+  var otpEnabled = true;
+  function toggleOtpDelete() {
+    otpEnabled = !otpEnabled;
+    const tog = document.getElementById('otpToggle');
+    const grid = document.getElementById('durationGrid');
+    tog.classList.toggle('on', otpEnabled);
+    tog.classList.toggle('off', !otpEnabled);
+    grid.style.opacity = otpEnabled ? '1' : '0.4';
+    grid.style.pointerEvents = otpEnabled ? 'auto' : 'none';
+  }
+</script>
+
+</body>
+</html>

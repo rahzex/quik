@@ -23,14 +23,19 @@ import androidx.work.ForegroundInfo
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dev.octoshrimpy.quik.blocking.BlockingClient
+import dev.octoshrimpy.quik.categorization.SmsCategorizer
 import dev.octoshrimpy.quik.interactor.UpdateBadge
 import dev.octoshrimpy.quik.manager.NotificationManager
 import dev.octoshrimpy.quik.manager.ShortcutManager
+import dev.octoshrimpy.quik.model.Conversation
+import dev.octoshrimpy.quik.model.Message
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.ContactRepository
 import dev.octoshrimpy.quik.repository.ConversationRepository
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepository
 import dev.octoshrimpy.quik.repository.MessageRepository
 import dev.octoshrimpy.quik.util.Preferences
+import io.realm.Realm
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -49,6 +54,12 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
     @Inject lateinit var shortcutManager: ShortcutManager
     @Inject lateinit var filterRepo: MessageContentFilterRepository
     @Inject lateinit var contactsRepo: ContactRepository
+
+    /**
+     * Injected by InjectionWorkerFactory. Used to determine the category
+     * of every new incoming message in real time.
+     */
+    lateinit var categorizer: SmsCategorizer
 
     override fun doWork(): Result {
         Timber.v("started")
@@ -111,6 +122,41 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
         if (conversation.archived) {
             Timber.v("conversation unarchived")
             conversationRepo.markUnarchived(listOf(conversation.id))
+        }
+
+        // ── Categorize the incoming message ──────────────────────────────────────
+        // Only runs when the user has auto-categorize enabled (default: true).
+        //
+        // We categorize AFTER unarchiving but BEFORE sending notifications so that
+        // the notification shown to the user already reflects the correct category.
+        //
+        // Realm writes must happen on the thread that opened the Realm instance.
+        // Since doWork() already runs on a background IO thread managed by WorkManager,
+        // it's safe to do a synchronous Realm.getDefaultInstance() here.
+        if (prefs.autoCategorize.get()) {
+            val category = categorizer.categorize(
+                address = message.address,
+                body    = message.body
+            )
+            Timber.v("categorized as: $category")
+
+            Realm.getDefaultInstance().use { realm ->
+                realm.executeTransaction { r ->
+                    // Update the individual message's category.
+                    // `.apply {}` is used because `?.field = value` is not valid Kotlin —
+                    // null-safe assignment on the left side of `=` is not supported.
+                    r.where(Message::class.java)
+                        .equalTo("id", message.id)
+                        .findFirst()
+                        ?.apply { categoryId = category.name }
+
+                    // Update the parent conversation's category so the tab filter works
+                    r.where(Conversation::class.java)
+                        .equalTo("id", conversation.id)
+                        .findFirst()
+                        ?.apply { categoryId = category.name }
+                }
+            }
         }
 
         // update/create notification
