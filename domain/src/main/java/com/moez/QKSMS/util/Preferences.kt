@@ -223,4 +223,33 @@ class Preferences @Inject constructor(
             else -> rxPrefs.getString("ringtone_$threadId", default.get())
         }
     }
+
+    // ── Categorization preferences ────────────────────────────────────────────────
+
+    /**
+     * When true (the default), every incoming SMS is automatically categorized
+     * by [SmsCategorizerImpl] inside [ReceiveSmsWorker].
+     *
+     * When the user switches this OFF in Settings → Categorisation, new messages
+     * are saved with categoryId = "ALL" (visible only in the "All" tab, no badge).
+     *
+     * This is an RxJava [Preference] — ViewModels can observe it reactively and
+     * update the UI when the user toggles it in Settings, without needing an explicit
+     * callback.
+     */
+    val autoCategorize: Preference<Boolean> = rxPrefs.getBoolean("auto_categorize", true)
+
+    /**
+     * One-time flag to track whether the first-run historical categorization has
+     * completed for this installation.
+     *
+     * Flow:
+     *  1. On first launch, [QKApplication] checks: if !categorizedV1Done.get() → enqueue worker
+     *  2. [CategorizeAllMessagesWorker] processes all existing messages
+     *  3. Worker sets categorizedV1Done = true
+     *  4. On all subsequent launches, the check is skipped
+     *
+     * This prevents the batch worker from running on every app launch.
+     */
+    val categorizedV1Done: Preference<Boolean> = rxPrefs.getBoolean("categorized_v1_done", false)
 }

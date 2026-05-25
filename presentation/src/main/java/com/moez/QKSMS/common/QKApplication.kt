@@ -44,6 +44,8 @@ import dev.octoshrimpy.quik.manager.ReferralManager
 import dev.octoshrimpy.quik.migration.QkMigration
 import dev.octoshrimpy.quik.migration.QkRealmMigration
 import dev.octoshrimpy.quik.util.NightModeManager
+import dev.octoshrimpy.quik.util.Preferences
+import dev.octoshrimpy.quik.worker.CategorizeAllMessagesWorker
 import dev.octoshrimpy.quik.worker.HousekeepingWorker
 import io.realm.Realm
 import io.realm.RealmConfiguration
@@ -70,6 +72,7 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
     @Inject lateinit var realmMigration: QkRealmMigration
     @Inject lateinit var referralManager: ReferralManager
     @Inject lateinit var workerFactory: WorkerFactory
+    @Inject lateinit var prefs: Preferences
 
     override fun onCreate() {
         super.onCreate()
@@ -129,6 +132,19 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
 
         // register, or re-register, housekeeping work manager
         HousekeepingWorker.register(applicationContext)
+
+        // ── First-run SMS categorization ──────────────────────────────────────────
+        // On the very first launch after Phase 1 is installed, all existing historical
+        // messages have categoryId = "ALL" (set by the Realm migration).
+        //
+        // We enqueue a one-time background worker to classify them all.
+        // The worker sets prefs.categorizedV1Done = true when done, so this check
+        // is skipped on all subsequent launches.
+        //
+        // WorkManager MUST be initialized (line above) before we can enqueue work.
+        if (!prefs.categorizedV1Done.get()) {
+            CategorizeAllMessagesWorker.enqueue(applicationContext)
+        }
     }
 
     override fun activityInjector(): AndroidInjector<Activity> {

@@ -300,6 +300,39 @@ class QkRealmMigration @Inject constructor(
             version ++
         }
 
+        // ── Schema v16: Add categoryId to Conversation and Message ──────────────────
+        // This migration adds the SMS categorization fields introduced in Phase 1.
+        //
+        // WHY hasField() guard?
+        // Realm migrations are run incrementally from the user's installed version.
+        // If a user skips a version and updates from e.g. v13 directly to v16, Realm
+        // will still run each block in order (13→14→15→16). The hasField() guard
+        // is a safety net so the block is idempotent (safe to run more than once).
+        //
+        // All existing rows default to "ALL" so they appear in the "All" tab immediately
+        // without being hidden. The CategorizeAllMessagesWorker will update them in the
+        // background after the app first launches with this version.
+        if (version == 15L) {
+            if (realm.schema.get("Conversation")?.hasField("categoryId") == false) {
+                realm.schema.get("Conversation")
+                    ?.addField("categoryId", String::class.java, FieldAttribute.REQUIRED)
+                    ?.addIndex("categoryId")        // index for fast tab-switching queries
+                    ?.transform { obj ->
+                        obj.setString("categoryId", "ALL")
+                    }
+            }
+            if (realm.schema.get("Message")?.hasField("categoryId") == false) {
+                realm.schema.get("Message")
+                    ?.addField("categoryId", String::class.java, FieldAttribute.REQUIRED)
+                    ?.addIndex("categoryId")        // index for fast Phase 2 finance queries
+                    ?.transform { obj ->
+                        obj.setString("categoryId", "ALL")
+                    }
+            }
+
+            version++
+        }
+
         check(version >= SCHEMA_VERSION) {
             "Migration from v$oldVersion to v$newVersion failed at v$version"
         }

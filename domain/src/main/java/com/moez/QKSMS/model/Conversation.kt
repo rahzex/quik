@@ -39,12 +39,45 @@ open class Conversation(
     var name: String = "", // custom title
 
     var sendAsGroup: Boolean = true,
+
+    /**
+     * Stores the SMS category for this conversation as the enum name string,
+     * e.g. "TRANSACTIONS", "OTP", "PERSONAL".
+     *
+     * WHY STRING AND NOT ENUM?
+     * Realm's database format doesn't support Kotlin enums directly. We store the
+     * string representation (MessageCategory.name) and convert it back to the enum
+     * via the computed `category` property below.
+     *
+     * DEFAULT = "ALL": unprocessed conversations stay in the "All" tab so they are
+     * never hidden from the user while the background categorization worker runs.
+     *
+     * @Index tells Realm to build an index on this field. This makes tab-switching
+     * fast — instead of scanning every row, Realm can jump straight to the right ones.
+     */
+    @Index var categoryId: String = MessageCategory.ALL.name,
 ) : RealmObject() {
 
     val date: Long get() = lastMessage?.date ?: if (draft.isNotEmpty()) draftDate else 0
     val snippet: String? get() = lastMessage?.getSummary()
     val unread: Boolean get() = lastMessage?.read == false
     val me: Boolean get() = lastMessage?.isMe() == true
+
+    /**
+     * Convenience property to get/set the category as the MessageCategory enum.
+     *
+     * Reading:  converts the stored "TRANSACTIONS" string back to MessageCategory.TRANSACTIONS
+     * Writing:  (use categoryId = newCategory.name directly for Realm writes inside transactions)
+     *
+     * The try/catch handles any future cases where an old string value doesn't match
+     * a known enum constant (e.g. after a rollback) — falls back to ALL gracefully.
+     */
+    val category: MessageCategory
+        get() = try {
+            MessageCategory.valueOf(categoryId)
+        } catch (e: IllegalArgumentException) {
+            MessageCategory.ALL
+        }
 
     fun getTitle(): String {
         return name.takeIf { it.isNotBlank() } ?: recipients.joinToString { recipient -> recipient.getDisplayName() }

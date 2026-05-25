@@ -30,6 +30,7 @@ import dev.octoshrimpy.quik.mapper.CursorToRecipient
 import dev.octoshrimpy.quik.model.Contact
 import dev.octoshrimpy.quik.model.Conversation
 import dev.octoshrimpy.quik.model.Message
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.Recipient
 import dev.octoshrimpy.quik.model.SearchResult
 import dev.octoshrimpy.quik.util.PhoneNumberUtils
@@ -86,6 +87,41 @@ class ConversationRepositoryImpl @Inject constructor(
     ): RealmResults<Conversation> =
         getConversationsBase(Realm.getDefaultInstance(), unreadAtTop, archived)
             .findAllAsync()
+
+    /**
+     * Returns a live Realm query result filtered by [category].
+     *
+     * IMPLEMENTATION DETAILS
+     * ─────────────────────
+     * We reuse [getConversationsBase] which already handles the sort order, archived,
+     * blocked, and draft/lastMessage conditions. Then we conditionally add one extra
+     * filter: `.equalTo("categoryId", category.name)`.
+     *
+     * `findAllAsync()` returns immediately with an empty list and populates it on
+     * a background thread. Realm notifies registered change listeners when results
+     * arrive — the ViewModel's RxJava Observable chain picks these up automatically.
+     *
+     * The `realm` instance we pass to `getConversationsBase` must NOT be closed until
+     * the returned RealmResults is no longer observed. Because `Realm.getDefaultInstance()`
+     * returns a thread-local instance with reference counting, it's safe to call it here
+     * and let Realm manage its own lifecycle on the calling (main) thread.
+     */
+    override fun getConversationsByCategory(
+        category: MessageCategory,
+        unreadAtTop: Boolean,
+        archived: Boolean
+    ): RealmResults<Conversation> {
+        val realm = Realm.getDefaultInstance()
+        val query = getConversationsBase(realm, unreadAtTop, archived)
+
+        // For the "All" tab, skip the category filter — show everything.
+        // For any specific tab, filter by the stored categoryId string.
+        if (category != MessageCategory.ALL) {
+            query.equalTo("categoryId", category.name)
+        }
+
+        return query.findAllAsync()
+    }
 
     override fun getConversationsSnapshot(unreadAtTop: Boolean): List<Conversation> =
         Realm.getDefaultInstance().use { realm ->
