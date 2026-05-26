@@ -195,12 +195,12 @@ class MainActivity : QkThemedActivity(), MainView {
 
     private fun setupCategoryTabs() {
         val categories = MessageCategory.values()
-        val accentColor = resolveThemeColor(android.R.attr.colorAccent)
+        val accentColor = 0xFF1a56db.toInt() // fixed accent blue matching HTML --accent and bottom nav
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
         val displayNames = mapOf(
             MessageCategory.ALL          to "All",
             MessageCategory.PERSONAL     to "Personal",
-            MessageCategory.TRANSACTIONS to "Txn",
+            MessageCategory.TRANSACTIONS to "Transactions",
             MessageCategory.OTP          to "OTP",
             MessageCategory.UPDATES      to "Updates",
             MessageCategory.PROMOS       to "Promos",
@@ -247,7 +247,7 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     private fun updateActiveCategoryTab(category: MessageCategory) {
-        val accentColor = resolveThemeColor(android.R.attr.colorAccent)
+        val accentColor = 0xFF1a56db.toInt() // fixed accent blue matching HTML --accent and bottom nav
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
         val index = MessageCategory.values().indexOf(category)
         activeTabView?.let { prev ->

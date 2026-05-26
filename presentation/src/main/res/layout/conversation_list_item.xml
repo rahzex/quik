@@ -127,13 +127,14 @@
 
     <ImageView
         android:id="@+id/unread"
-        android:layout_width="7dp"
-        android:layout_height="7dp"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginStart="4dp"
         android:src="@drawable/circle"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/title"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/title"
+        app:layout_constraintTop_toTopOf="parent"
         tools:tint="@color/tools_theme"
         tools:visibility="visible" />
 
