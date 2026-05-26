@@ -143,7 +143,8 @@ class ConversationsAdapter @Inject constructor(
         disposables.add(disposable)
 
         binding.pinned.isVisible = conversation.pinned
-        binding.unread.setTint(theme)
+        // Always use accent blue (#1a56db) matching HTML --accent, not per-conversation theme color
+        binding.unread.imageTintList = android.content.res.ColorStateList.valueOf(0xFF1a56db.toInt())
 
         // Category badge (matches HTML .msg-tag — between name row and preview)
         val category = conversation.category
