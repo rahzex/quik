@@ -1,5 +1,6 @@
 # QUIK — Frontend Design System
-> Reference this document for **all UI/visual changes**. Derived from the Pulse SMS design spec (`android-smsmms/pulse-sms-with-tabs_1.html`).
+> Reference this document for **all UI/visual changes**. Derived from the Pulse SMS design spec (`pulse-sms-with-tabs_2.html`).
+> **Always consult `pulse-sms-with-tabs_2.html` as the primary visual reference** — this document is a structured summary of it. When the two conflict, the HTML file is the source of truth.
 
 ---
 
@@ -305,7 +306,75 @@ pointer-events: none;
 
 ---
 
-## 10. Android XML / Attribute Mapping
+## 10. Dialog Patterns
+
+All dialogs share a common **modal sheet** structure overlaid on a scrimmed, blurred background.
+
+### Dialog Container
+```
+position:       centered overlay (absolute, translate -50% -50%)
+width:          calc(100% - 48px)
+background:     var(--surface)
+border:         1px solid var(--border-md)
+border-radius:  18px
+box-shadow:     0 20px 60px rgba(0,0,0,0.25), 0 4px 16px rgba(0,0,0,0.15)
+overflow:       hidden
+```
+
+### Scrim / Backdrop
+```
+background:     rgba(0,0,0,0.45)
+backdrop-filter: blur(1px)
+```
+
+### Dialog Icon Chip
+```
+size:           48×48px
+border-radius:  14px
+background:     semantic color bg  (red-bg / green-bg / accent-bg)
+icon:           22×22px · stroke matching semantic text color · stroke-width 1.75 · no fill
+centered:       padding 22px 20px 0
+```
+
+### Dialog Title & Body
+```
+padding:        14px 20px 4px
+text-align:     center
+title:          font-size 16px · font-weight 600 · color var(--text) · letter-spacing -0.02em · margin-bottom 8px
+body:           font-size 13px · color var(--text-2) · line-height 1.6 · font-weight 300
+                highlighted span: color var(--text) · font-weight 500
+```
+
+### Dialog Divider
+```
+height:         1px
+background:     var(--border)
+margin:         16px 0 0
+```
+
+### Dialog Button Row
+```
+layout:         flex row · equal flex:1 children
+padding:        14px 0  (each button)
+text-align:     center
+font-size:      14px
+letter-spacing: -0.01em
+separator:      border-right 1px solid var(--border) between buttons
+```
+
+### Dialog Variants
+
+| Variant | Icon bg | Icon stroke | Confirm button color | Use when |
+|---|---|---|---|---|
+| **Destructive** | `var(--red-bg)` | `var(--red-text)` | `var(--red-text)` · weight 600 | Irreversible delete / remove |
+| **Confirmation** | `var(--green-bg)` | `var(--green-text)` | `var(--accent)` · weight 600 | Positive action (unblock, enable) |
+| **Informational** | `var(--accent-bg)` | `var(--accent)` | `var(--accent)` · weight 600 | Neutral info / permission request |
+
+**Cancel button** (all variants): `color var(--text-2)` · `font-weight 500`
+
+---
+
+## 11. Android XML / Attribute Mapping
 
 | Design Token | Android Equivalent |
 |---|---|
@@ -328,5 +397,5 @@ pointer-events: none;
 
 ---
 
-*Last updated: May 2026 · Source: `android-smsmms/pulse-sms-with-tabs_1.html`*
+*Last updated: May 2026 · Source: `pulse-sms-with-tabs_2.html`*
 

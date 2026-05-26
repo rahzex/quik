@@ -52,6 +52,18 @@ Realm (not Room). Models are Realm `RealmObject` subclasses. Raw Android Content
 - `realm-android` plugin must be applied **before** `kotlin-android` in `presentation/build.gradle` (enforced; do not reorder).
 - App ID: `dev.octoshrimpy.quik`
 
+## UI / Design Conventions
+
+> **For every UI modification, strictly follow these two design references — no exceptions:**
+>
+> 1. **`pulse-sms-with-tabs_2.html`** (root of repo) — the canonical visual spec. All color tokens, component specs, spacing, and dialog designs are demonstrated here. This is the primary source of truth.
+> 2. **`DESIGN_SYSTEM.md`** (root of repo) — a structured Markdown summary of the HTML spec, including typography, color tokens, border radii, spacing, component patterns, dialog variants, elevation, motion, iconography, and Android XML mappings.
+>
+> When implementing or modifying any UI element (layouts, dialogs, colors, typography, icons, spacing, animations) you **must**:
+> - Open `pulse-sms-with-tabs_2.html` and find the matching screen/component.
+> - Cross-reference `DESIGN_SYSTEM.md` for the token/attribute mapping.
+> - Never deviate from these specs (colors, radii, shadows, font weights, etc.) without explicit instruction.
+
 ## Key Conventions
 
 - **Translations**: Never edit string resources directly. All translations go through [Weblate](https://hosted.weblate.org/engage/quik/). PRs that modify translated strings directly will be rejected.
@@ -66,4 +78,6 @@ Realm (not Room). Models are Realm `RealmObject` subclasses. Raw Android Content
 - `presentation/.../injection/AppModule.kt` — all DI bindings
 - `domain/.../util/Preferences.kt` — all user preference keys
 - `domain/.../repository/*.kt` — all repository contracts
+- `pulse-sms-with-tabs_2.html` — **canonical UI/design spec** (primary visual reference)
+- `DESIGN_SYSTEM.md` — structured design token & component reference derived from the HTML spec
 
