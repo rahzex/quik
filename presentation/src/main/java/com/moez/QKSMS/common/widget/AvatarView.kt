@@ -1,23 +1,4 @@
-/*
- * Copyright (C) 2017 Moez Bhatti <moez.bhatti@gmail.com>
- *
- * This file is part of QKSMS.
- *
- * QKSMS is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * QKSMS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with QKSMS.  If not, see <http://www.gnu.org/licenses/>.
- */
 package dev.octoshrimpy.quik.common.widget
-
 import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
@@ -26,86 +7,85 @@ import dev.octoshrimpy.quik.R
 import dev.octoshrimpy.quik.common.Navigator
 import dev.octoshrimpy.quik.common.util.Colors
 import dev.octoshrimpy.quik.common.util.extensions.setBackgroundTint
-import dev.octoshrimpy.quik.common.util.extensions.setTint
 import dev.octoshrimpy.quik.databinding.AvatarViewBinding
 import dev.octoshrimpy.quik.injection.appComponent
 import dev.octoshrimpy.quik.model.Recipient
 import dev.octoshrimpy.quik.util.GlideApp
 import javax.inject.Inject
-
 class AvatarView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
-
     @Inject lateinit var colors: Colors
     @Inject lateinit var navigator: Navigator
-
     private var lookupKey: String? = null
     private var fullName: String? = null
+    private var address: String? = null
     private var photoUri: String? = null
     private var lastUpdated: Long? = null
     private var theme: Colors.Theme
     private var layout: AvatarViewBinding
-
     init {
-        if (!isInEditMode) {
-            appComponent.inject(this)
-        }
-
+        if (!isInEditMode) { appComponent.inject(this) }
         theme = colors.theme()
-
         layout = AvatarViewBinding.inflate(LayoutInflater.from(context), this)
         setBackgroundResource(R.drawable.circle)
         clipToOutline = true
     }
-
-    /**
-     * Use the contact information to display the avatar.
-     */
     fun setRecipient(recipient: Recipient?) {
         lookupKey = recipient?.contact?.lookupKey
         fullName = recipient?.contact?.name
+        address = recipient?.address
         photoUri = recipient?.contact?.photoUri
         lastUpdated = recipient?.contact?.lastUpdate
         theme = colors.theme(recipient)
         updateView()
     }
-
+    /** Override bg + text colour — called by GroupAvatarView for category-based styling. */
+    fun applyCategoryStyle(bgColor: Int, textColor: Int) {
+        setBackgroundTint(bgColor)
+        layout.initial.setTextColor(textColor)
+        layout.icon.setColorFilter(textColor)
+    }
     override fun onFinishInflate() {
         super.onFinishInflate()
-
-        if (!isInEditMode) {
-            updateView()
-        }
+        if (!isInEditMode) updateView()
     }
-
     private fun updateView() {
-        // Apply theme
         setBackgroundTint(theme.theme)
         layout.initial.setTextColor(theme.textPrimary)
-        layout.icon.setTint(theme.textPrimary)
-
+        layout.icon.setColorFilter(theme.textPrimary)
         val initials = fullName
-                ?.substringBefore(',')
-                ?.split(" ").orEmpty()
-                .filter { name -> name.isNotEmpty() }
-                .map { name -> name[0] }
-                .filter { initial -> initial.isLetterOrDigit() }
-                .map { initial -> initial.toString() }
-
-        if (initials.isNotEmpty()) {
-            layout.initial.text = if (initials.size > 1) initials.first() + initials.last() else initials.first()
-            layout.icon.visibility = GONE
-        } else {
-            layout.initial.text = null
-            layout.icon.visibility = VISIBLE
+            ?.substringBefore(",")
+            ?.split(" ").orEmpty()
+            .filter { name -> name.isNotEmpty() }
+            .map { name -> name[0] }
+            .filter { initial -> initial.isLetterOrDigit() }
+            .map { initial -> initial.toString() }
+        layout.icon.visibility = GONE
+        val label = when {
+            initials.isNotEmpty() ->
+                if (initials.size > 1) initials.first() + initials.last() else initials.first()
+            else -> deriveAddressLabel(address)
         }
-
+        layout.initial.text = label
+        // Scale font: 1-2 chars → 14sp, 3 chars → 11sp, 4+ chars → 9sp (matches HTML .av font-size:11px)
+        layout.initial.textSize = when {
+            label.length <= 2 -> 14f
+            label.length == 3 -> 11f
+            else              -> 9f
+        }
         layout.photo.setImageDrawable(null)
-        photoUri?.let { photoUri ->
-            GlideApp.with(layout.photo)
-                    .load(photoUri)
-                    .into(layout.photo)
+        photoUri?.let { uri -> GlideApp.with(layout.photo).load(uri).into(layout.photo) }
+    }
+    private fun deriveAddressLabel(addr: String?): String {
+        if (addr.isNullOrBlank()) return "?"
+        val parts = addr.split("-").filter { it.isNotEmpty() }
+        return if (parts.size >= 2) {
+            // Shortcode like "JD-FLPKRT-S" → take up to 4 chars from second segment
+            parts[1].take(4).uppercase()
+        } else {
+            // Plain phone number or unknown → show "UK"
+            "UK"
         }
     }
 }
