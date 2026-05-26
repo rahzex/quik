@@ -3,7 +3,7 @@
     <item
         android:id="@+id/nav_messages"
         android:icon="@drawable/ic_chat_bubble_outline_24dp"
-        android:title="@string/title_conversations" />
+        android:title="@string/main_title_messages" />
     <item
         android:id="@+id/nav_finance"
         android:icon="@drawable/ic_finance"
