@@ -83,6 +83,18 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
 
     private val progressAnimator by lazy { ObjectAnimator.ofInt(binding.syncingProgress, "progress", 0, 0) }
 
+    /**
+     * Shared stream of all PreferenceView clicks. Cached so that multiple callers
+     * (preferenceClicks + autoCategorizeChanged) share the same underlying
+     * setOnClickListener — calling clicks() twice would replace the first listener.
+     */
+    private val sharedPreferenceClicks: Observable<PreferenceView> by lazy {
+        collectPreferenceViews(binding.preferences)
+            .map { pref -> pref.clicks().map { pref } }
+            .let { Observable.merge(it) }
+            .share()
+    }
+
     init {
         appComponent.inject(this)
         retainViewMode = RetainViewMode.RETAIN_DETACH
@@ -116,9 +128,7 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
         showBackButton(true)
     }
 
-    override fun preferenceClicks(): Observable<PreferenceView> = collectPreferenceViews(binding.preferences)
-            .map { preference -> preference.clicks().map { preference } }
-            .let { preferences -> Observable.merge(preferences) }
+    override fun preferenceClicks(): Observable<PreferenceView> = sharedPreferenceClicks
 
     /** Collects all [PreferenceView]s in [group] and any nested [ViewGroup]s. */
     private fun collectPreferenceViews(group: ViewGroup): List<PreferenceView> =
@@ -151,7 +161,7 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
     override fun messageLinkHandlingSelected(): Observable<Int> = messageLinkHandlingDialog.adapter.menuItemClicks
 
     override fun autoCategorizeChanged(): Observable<Boolean> =
-        preferenceClicks()
+        sharedPreferenceClicks
             .filter { it.id == R.id.autoCategorize }
             .map { binding.autoCategorize.checkbox?.isChecked != true }
 
@@ -170,6 +180,7 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
         binding.autoEmoji.checkbox?.isChecked = state.autoEmojiEnabled
 
         binding.delayed.summary = state.sendDelaySummary
+        binding.delayed.checkbox?.isChecked = state.sendDelayId != 0
         sendDelayDialog.adapter.selectedItem = state.sendDelayId
 
         binding.delivery.checkbox?.isChecked = state.deliveryEnabled

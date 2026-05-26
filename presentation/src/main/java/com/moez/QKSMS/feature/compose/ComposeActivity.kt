@@ -431,7 +431,7 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
                 dev.octoshrimpy.quik.model.MessageCategory.SPAM         -> Pair(0xFFFFF0F0.toInt(), 0xFFC0392B.toInt())
                 else                                                     -> Pair(0xFFEEEEEE.toInt(), 0xFF424242.toInt())
             }
-            binding.categoryBadge.setBackgroundColor(bgColor)
+            binding.categoryBadge.backgroundTintList = android.content.res.ColorStateList.valueOf(bgColor)
             binding.categoryBadge.setTextColor(textColor)
         } else {
             binding.categoryBadge.visibility = android.view.View.GONE

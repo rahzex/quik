@@ -221,6 +221,8 @@ class SettingsPresenter @Inject constructor(
 
                         R.id.autoCategorize -> prefs.autoCategorize.set(!prefs.autoCategorize.get())
 
+                        R.id.blocking -> navigator.showBlockedConversations()
+
                         R.id.sync -> syncMessages.execute(Unit)
 
                         R.id.about -> view.showAbout()

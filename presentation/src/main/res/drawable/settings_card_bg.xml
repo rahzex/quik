@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Settings card group background: white fill + subtle border + 12dp radius -->
+<!-- Settings card group background: rounded rect with subtle border, no theme attrs -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="?android:attr/windowBackground" />
-            <stroke android:width="1dp" android:color="@color/settings_card_stroke" />
+            <solid android:color="#00000000" />
+            <stroke android:width="1dp" android:color="#1A000000" />
             <corners android:radius="12dp" />
         </shape>
     </item>
