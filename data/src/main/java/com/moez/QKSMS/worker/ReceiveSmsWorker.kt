@@ -24,6 +24,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dev.octoshrimpy.quik.blocking.BlockingClient
 import dev.octoshrimpy.quik.categorization.SmsCategorizer
+import dev.octoshrimpy.quik.categorization.TransactionParser
 import dev.octoshrimpy.quik.interactor.UpdateBadge
 import dev.octoshrimpy.quik.manager.NotificationManager
 import dev.octoshrimpy.quik.manager.ShortcutManager
@@ -32,6 +33,7 @@ import dev.octoshrimpy.quik.model.Message
 import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.ContactRepository
 import dev.octoshrimpy.quik.repository.ConversationRepository
+import dev.octoshrimpy.quik.repository.FinanceRepository
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepository
 import dev.octoshrimpy.quik.repository.MessageRepository
 import dev.octoshrimpy.quik.util.Preferences
@@ -60,6 +62,13 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
      * of every new incoming message in real time.
      */
     lateinit var categorizer: SmsCategorizer
+
+    /**
+     * Phase 2: Extracts structured financial data from TRANSACTIONS messages.
+     * Injected by InjectionWorkerFactory.
+     */
+    lateinit var transactionParser: TransactionParser
+    lateinit var financeRepo: FinanceRepository
 
     override fun doWork(): Result {
         Timber.v("started")
@@ -155,6 +164,32 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
                         .equalTo("id", conversation.id)
                         .findFirst()
                         ?.apply { categoryId = category.name }
+                }
+            }
+        }
+
+        // ── Phase 2: Parse financial data from TRANSACTIONS messages ─────────
+        if (prefs.autoCategorize.get()) {
+            val msgCategory = try {
+                MessageCategory.valueOf(
+                    Realm.getDefaultInstance().use { r ->
+                        r.where(Message::class.java).equalTo("id", message.id).findFirst()?.categoryId ?: ""
+                    }
+                )
+            } catch (_: Exception) { null }
+
+            if (msgCategory == MessageCategory.TRANSACTIONS) {
+                transactionParser.parse(message.address, message.body)?.let { data ->
+                    financeRepo.saveTransaction(data, message)
+                    if (data.availableBalance > 0.0) {
+                        financeRepo.updateAccountBalance(
+                            senderAddress = message.address,
+                            accountLast4  = data.accountLast4,
+                            balance       = data.availableBalance,
+                            ts            = message.date
+                        )
+                    }
+                    Timber.v("finance: parsed ${if (data.isDebit) "debit" else "credit"} ₹${data.amount}")
                 }
             }
         }

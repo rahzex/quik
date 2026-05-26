@@ -34,6 +34,8 @@ import dev.octoshrimpy.quik.blocking.BlockingClient
 import dev.octoshrimpy.quik.blocking.BlockingManager
 import dev.octoshrimpy.quik.categorization.SmsCategorizer
 import dev.octoshrimpy.quik.categorization.SmsCategorizerImpl
+import dev.octoshrimpy.quik.categorization.TransactionParser
+import dev.octoshrimpy.quik.categorization.TransactionParserImpl
 import dev.octoshrimpy.quik.common.ViewModelFactory
 import dev.octoshrimpy.quik.common.util.BillingManagerImpl
 import dev.octoshrimpy.quik.common.util.NotificationManagerImpl
@@ -85,6 +87,8 @@ import dev.octoshrimpy.quik.repository.ConversationRepository
 import dev.octoshrimpy.quik.repository.ConversationRepositoryImpl
 import dev.octoshrimpy.quik.repository.EmojiReactionRepository
 import dev.octoshrimpy.quik.repository.EmojiReactionRepositoryImpl
+import dev.octoshrimpy.quik.repository.FinanceRepository
+import dev.octoshrimpy.quik.repository.FinanceRepositoryImpl
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepository
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepositoryImpl
 import dev.octoshrimpy.quik.repository.MessageRepository
@@ -165,6 +169,14 @@ class AppModule(private var application: Application) {
     @Provides
     @Singleton
     fun provideSmsCategorizer(impl: SmsCategorizerImpl): SmsCategorizer = impl
+
+    @Provides
+    @Singleton
+    fun provideTransactionParser(impl: TransactionParserImpl): TransactionParser = impl
+
+    @Provides
+    @Singleton
+    fun provideFinanceRepository(impl: FinanceRepositoryImpl): FinanceRepository = impl
 
     @Provides
     fun changelogManager(manager: ChangelogManagerImpl): ChangelogManager = manager

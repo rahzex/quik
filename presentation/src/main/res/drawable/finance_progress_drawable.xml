@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Finance progress bar: spent portion (red) + saved portion (green).
+  Used in the net-saved card on the Finance Dashboard.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Track (background): green — represents "saved" -->
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <corners android:radius="3dp" />
+            <solid android:color="@color/finance_green_bg" />
+        </shape>
+    </item>
+    <!-- Progress fill: red — represents "spent" -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="3dp" />
+                <solid android:color="@color/finance_red_text" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>
+

@@ -61,6 +61,7 @@ import dev.octoshrimpy.quik.databinding.MainSyncingBinding
 import dev.octoshrimpy.quik.feature.changelog.ChangelogDialog
 import dev.octoshrimpy.quik.feature.conversations.ConversationItemTouchCallback
 import dev.octoshrimpy.quik.feature.conversations.ConversationsAdapter
+import dev.octoshrimpy.quik.feature.finance.FinanceController
 import dev.octoshrimpy.quik.manager.ChangelogManager
 import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.SyncRepository
@@ -83,6 +84,7 @@ class MainActivity : QkThemedActivity(), MainView {
     private lateinit var binding: MainActivityBinding
     private lateinit var snackbarBinding: MainPermissionHintBinding
     private lateinit var syncingBinding: MainSyncingBinding
+    private lateinit var financeRouter: com.bluelinelabs.conductor.Router
 
     override val onNewIntentIntent: Subject<Intent> = PublishSubject.create()
     override val activityResumedIntent: Subject<Boolean> = PublishSubject.create()
@@ -129,6 +131,12 @@ class MainActivity : QkThemedActivity(), MainView {
         super.onCreate(savedInstanceState)
         binding = MainActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Init Conductor router for Finance tab
+        financeRouter = com.bluelinelabs.conductor.Conductor.attachRouter(
+            this, binding.financeContainer, savedInstanceState
+        )
+
         viewModel.bindView(this)
         onNewIntentIntent.onNext(intent)
 
@@ -337,7 +345,7 @@ class MainActivity : QkThemedActivity(), MainView {
         when (state.page) {
             is Inbox -> {
                 binding.recyclerView.isVisible = true
-                binding.financePlaceholder.isVisible = false
+                binding.financeContainer.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
@@ -349,7 +357,7 @@ class MainActivity : QkThemedActivity(), MainView {
 
             is Searching -> {
                 binding.recyclerView.isVisible = true
-                binding.financePlaceholder.isVisible = false
+                binding.financeContainer.isVisible = false
                 if (binding.recyclerView.adapter !== searchAdapter)
                     binding.recyclerView.adapter = searchAdapter
                 searchAdapter.data = state.page.data ?: listOf()
@@ -359,7 +367,7 @@ class MainActivity : QkThemedActivity(), MainView {
 
             is Archived -> {
                 binding.recyclerView.isVisible = true
-                binding.financePlaceholder.isVisible = false
+                binding.financeContainer.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
@@ -369,7 +377,15 @@ class MainActivity : QkThemedActivity(), MainView {
 
             is Finance -> {
                 binding.recyclerView.isVisible = false
-                binding.financePlaceholder.isVisible = true
+                binding.financeContainer.isVisible = true
+                binding.inboxHead.isVisible = false
+                binding.tabsDivider.isVisible = false
+                // Push FinanceController once; Conductor keeps it alive across renders.
+                if (!financeRouter.hasRootController()) {
+                    financeRouter.setRoot(
+                        com.bluelinelabs.conductor.RouterTransaction.with(FinanceController())
+                    )
+                }
             }
 
             else -> {}

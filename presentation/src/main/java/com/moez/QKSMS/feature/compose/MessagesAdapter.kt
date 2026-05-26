@@ -65,7 +65,9 @@ import dev.octoshrimpy.quik.feature.compose.part.PartsAdapter
 import dev.octoshrimpy.quik.feature.extensions.isEmojiOnly
 import dev.octoshrimpy.quik.model.Conversation
 import dev.octoshrimpy.quik.model.Message
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.Recipient
+import dev.octoshrimpy.quik.repository.FinanceRepository
 import dev.octoshrimpy.quik.databinding.MessageListItemInBinding
 import dev.octoshrimpy.quik.databinding.MessageListItemOutBinding
 import dev.octoshrimpy.quik.util.PhoneNumberUtils
@@ -84,6 +86,7 @@ class MessagesAdapter @Inject constructor(
     private val context: Context,
     private val colors: Colors,
     private val dateFormatter: DateFormatter,
+    private val financeRepo: FinanceRepository,
     private val partsAdapterProvider: Provider<PartsAdapter>,
     private val phoneNumberUtils: PhoneNumberUtils,
     private val prefs: Preferences,
@@ -269,8 +272,7 @@ class MessagesAdapter @Inject constructor(
             }
 
             body.apply {
-                // Outgoing: accent colour bg, white text (HTML: .bubble.out)
-                setBackgroundTint(theme.theme)
+                // Outgoing: accent colour text (background tint applied later after setBackgroundResource)
                 setTextColor(theme.textPrimary)
                 highlightColor = theme.theme.withAlpha(0x5d)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -296,16 +298,70 @@ class MessagesAdapter @Inject constructor(
                 setVisible(!canGroup(message, next), View.INVISIBLE)
             }
 
-            // Incoming bubbles: theme-aware background + matching text color.
+            // Incoming bubbles: text color on body.
+            // Use holder.itemView.context for theme-correct color resolution (light vs dark mode).
+            val viewContext = holder.itemView.context
             body.apply {
-                setBackgroundTint(context.getColor(R.color.incoming_bubble))
-                setTextColor(context.getColor(R.color.incoming_bubble_text))
-                highlightColor = context.getColor(R.color.incoming_bubble_text).withAlpha(0x40)
+                setTextColor(viewContext.getColor(R.color.incoming_bubble_text))
+                highlightColor = viewContext.getColor(R.color.incoming_bubble_text).withAlpha(0x40)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    textSelectHandle?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
-                    textSelectHandleLeft?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
-                    textSelectHandleRight?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
+                    textSelectHandle?.setTint(viewContext.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
+                    textSelectHandleLeft?.setTint(viewContext.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
+                    textSelectHandleRight?.setTint(viewContext.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
                 }
+            }
+
+            // ── Phase 2: Parsed financial card ───────────────────────────────
+            // Only shown for TRANSACTIONS-category messages that have a ParsedTransaction row.
+            val parsedCard   = binding.parsedCard
+            val parsedLabel  = binding.parsedLabel
+            val parsedAmount = binding.parsedAmount
+            val parsedSub    = binding.parsedSub
+
+            if (message.category == MessageCategory.TRANSACTIONS) {
+                val txn = financeRepo.getTransactionForMessage(message.id)
+                if (txn != null) {
+                    parsedCard.visibility = View.VISIBLE
+
+                    val isDebit = txn.isDebit
+                    val bgColor   = viewContext.getColor(if (isDebit) R.color.finance_red_bg   else R.color.finance_green_bg)
+                    val textColor = viewContext.getColor(if (isDebit) R.color.finance_red_text else R.color.finance_green_text)
+
+                    // Use GradientDrawable.setColor() for reliable theming in both light and dark mode.
+                    // backgroundTintList can have low contrast in light mode (nearly white on gray bubble).
+                    val bg = android.graphics.drawable.GradientDrawable().apply {
+                        shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                        cornerRadius = 8 * viewContext.resources.displayMetrics.density
+                        setColor(bgColor)
+                    }
+                    parsedCard.background = bg
+
+                    parsedLabel.text      = if (isDebit) "Debit detected" else "Credit detected"
+                    parsedLabel.setTextColor(textColor)
+
+                    val amtStr = java.text.NumberFormat.getCurrencyInstance(java.util.Locale("en", "IN"))
+                        .apply { maximumFractionDigits = 0 }
+                        .format(txn.amount)
+                    parsedAmount.text = "${if (isDebit) "−" else "+"} $amtStr"
+                    parsedAmount.setTextColor(textColor)
+
+                    val sub = buildString {
+                        if (txn.method.isNotBlank() && txn.method != "Other") append(txn.method)
+                        if (txn.reference.isNotBlank()) append(" · Ref ${txn.reference}")
+                        if (txn.availableBalance > 0) {
+                            val balStr = java.text.NumberFormat.getCurrencyInstance(java.util.Locale("en", "IN"))
+                                .apply { maximumFractionDigits = 0 }
+                                .format(txn.availableBalance)
+                            append(" · Bal $balStr")
+                        }
+                    }.trimStart(' ', '·', ' ')
+                    parsedSub.text = sub
+                    parsedSub.setTextColor(textColor)
+                } else {
+                    parsedCard.visibility = View.GONE
+                }
+            } else {
+                parsedCard.visibility = View.GONE
             }
         }
 
@@ -405,19 +461,32 @@ class MessagesAdapter @Inject constructor(
             else -> body.movementMethod = LinkMovementMethod.getInstance()
         }
 
+        val bubbleDrawableRes = getBubble(
+            emojiOnly = emojiOnly,
+            canGroupWithPrevious = canGroup(message, previous) ||
+                    message.parts.any { !it.isSmil() && !it.isText() },
+            canGroupWithNext = canGroup(message, next),
+            isMe = message.isMe()
+        )
+
         body.apply {
             text = spanString
             setVisible(message.isSms() || spanString.isNotBlank())
+        }
 
-            setBackgroundResource(
-                getBubble(
-                    emojiOnly = emojiOnly,
-                    canGroupWithPrevious = canGroup(message, previous) ||
-                            message.parts.any { !it.isSmil() && !it.isText() },
-                    canGroupWithNext = canGroup(message, next),
-                    isMe = message.isMe()
-                )
-            )
+        if (isOutgoing) {
+            // Outgoing: bubble shape + tint on body (unchanged)
+            body.setBackgroundResource(bubbleDrawableRes)
+            body.setBackgroundTint(theme.theme)
+        } else {
+            // Incoming: bubble shape on bubbleContainer; body has no background.
+            // Use holder.itemView.context (Activity context) — not the injected application context —
+            // so night-mode resource overrides from AppCompatDelegate are applied correctly.
+            val inBinding = MessageListItemInBinding.bind(holder.itemView)
+            val viewContext = holder.itemView.context
+            inBinding.bubbleContainer.setBackgroundResource(bubbleDrawableRes)
+            inBinding.bubbleContainer.setBackgroundTint(viewContext.getColor(R.color.incoming_bubble))
+            body.background = null
         }
 
         // Bind the parts

@@ -48,6 +48,7 @@ import dev.octoshrimpy.quik.util.NightModeManager
 import dev.octoshrimpy.quik.util.Preferences
 import dev.octoshrimpy.quik.worker.CategorizeAllMessagesWorker
 import dev.octoshrimpy.quik.worker.HousekeepingWorker
+import dev.octoshrimpy.quik.worker.ParseAllTransactionsWorker
 import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
 import io.realm.RealmConfiguration
@@ -149,6 +150,13 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
         // WorkManager MUST be initialized (line above) before we can enqueue work.
         if (!prefs.categorizedV3Done.get()) {
             CategorizeAllMessagesWorker.enqueue(applicationContext)
+        }
+
+        // ── Phase 2: First-run transaction parsing ────────────────────────────────
+        // Parse all historical TRANSACTIONS messages into ParsedTransaction rows so
+        // the Finance Dashboard has data on first launch. Guarded by a one-time flag.
+        if (!prefs.parsedTransactionsV1Done.get()) {
+            ParseAllTransactionsWorker.enqueue(applicationContext)
         }
 
         // Re-categorize after every sync completes (handles the race condition where

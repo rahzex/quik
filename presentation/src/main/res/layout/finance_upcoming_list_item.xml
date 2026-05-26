@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Upcoming bill/reminder row — matches HTML .reminder -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:background="@drawable/rounded_rectangle_12dp"
+    android:backgroundTint="?android:attr/colorBackground"
+    android:layout_marginBottom="8dp">
+
+    <!-- Icon pill -->
+    <FrameLayout
+        android:id="@+id/reminderIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/rounded_rectangle_8dp"
+        android:backgroundTint="@color/finance_red_bg"
+        android:layout_marginEnd="10dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_credit_card_black_24dp"
+            android:tint="@color/finance_red_text" />
+    </FrameLayout>
+
+    <!-- Title + meta -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/reminderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12.5sp"
+            android:textColor="?android:attr/textColorPrimary"
+            tools:text="Credit card bill" />
+
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/reminderMeta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="Due 08/03/2024" />
+    </LinearLayout>
+
+    <!-- Amount -->
+    <dev.octoshrimpy.quik.common.widget.QkTextView
+        android:id="@+id/reminderAmount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/finance_red_text"
+        tools:text="₹5,790" />
+
+</LinearLayout>
+

@@ -37,7 +37,7 @@ class QkRealmMigration @Inject constructor(
 ) : RealmMigration {
 
     companion object {
-        const val SCHEMA_VERSION: Long = 16
+        const val SCHEMA_VERSION: Long = 17
     }
 
     @SuppressLint("ApplySharedPref")
@@ -329,6 +329,34 @@ class QkRealmMigration @Inject constructor(
                         obj.setString("categoryId", "ALL")
                     }
             }
+
+            version++
+        }
+
+        // ── Schema v17: Add ParsedTransaction + AccountBalance tables (Phase 2) ──
+        // New tables for the Finance Dashboard. No existing data needs migrating
+        // — rows are populated by ParseAllTransactionsWorker on first launch.
+        if (version == 16L) {
+            realm.schema.create("ParsedTransaction")
+                .addField("id",               Long::class.java,    FieldAttribute.PRIMARY_KEY, FieldAttribute.REQUIRED)
+                .addField("threadId",         Long::class.java,    FieldAttribute.INDEXED,     FieldAttribute.REQUIRED)
+                .addField("date",             Long::class.java,    FieldAttribute.REQUIRED)
+                .addField("amount",           Double::class.java,  FieldAttribute.REQUIRED)
+                .addField("isDebit",          Boolean::class.java, FieldAttribute.REQUIRED)
+                .addField("merchant",         String::class.java,  FieldAttribute.REQUIRED)
+                .addField("reference",        String::class.java,  FieldAttribute.REQUIRED)
+                .addField("accountLast4",     String::class.java,  FieldAttribute.REQUIRED)
+                .addField("availableBalance", Double::class.java,  FieldAttribute.REQUIRED)
+                .addField("method",           String::class.java,  FieldAttribute.REQUIRED)
+                .addField("year",             Int::class.java,     FieldAttribute.INDEXED,     FieldAttribute.REQUIRED)
+                .addField("month",            Int::class.java,     FieldAttribute.INDEXED,     FieldAttribute.REQUIRED)
+
+            realm.schema.create("AccountBalance")
+                .addField("id",            String::class.java, FieldAttribute.PRIMARY_KEY, FieldAttribute.REQUIRED)
+                .addField("senderPattern", String::class.java, FieldAttribute.REQUIRED)
+                .addField("accountLast4",  String::class.java, FieldAttribute.REQUIRED)
+                .addField("balance",       Double::class.java, FieldAttribute.REQUIRED)
+                .addField("lastUpdated",   Long::class.java,   FieldAttribute.REQUIRED)
 
             version++
         }

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Account card row for Finance Dashboard — matches HTML .acct-card -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:background="@drawable/rounded_rectangle_12dp"
+    android:backgroundTint="?android:attr/colorBackground"
+    android:layout_marginBottom="8dp">
+
+    <!-- Bank initial avatar -->
+    <FrameLayout
+        android:id="@+id/accountAvatar"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:background="@drawable/rounded_rectangle_8dp"
+        android:backgroundTint="?attr/bubbleColor"
+        android:layout_marginEnd="10dp">
+
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/accountInitials"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:textColor="?android:attr/textColorPrimary"
+            tools:text="HD" />
+    </FrameLayout>
+
+    <!-- Name + masked account number -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/accountSender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12.5sp"
+            android:textColor="?android:attr/textColorPrimary"
+            tools:text="JXHDFCBK" />
+
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/accountNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="10sp"
+            android:textColor="?android:attr/textColorSecondary"
+            tools:text="·· 7472" />
+    </LinearLayout>
+
+    <!-- Balance -->
+    <dev.octoshrimpy.quik.common.widget.QkTextView
+        android:id="@+id/accountBalance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        tools:text="₹38,421" />
+
+</LinearLayout>
+

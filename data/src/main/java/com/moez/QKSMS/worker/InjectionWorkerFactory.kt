@@ -25,12 +25,14 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import dev.octoshrimpy.quik.blocking.BlockingClient
 import dev.octoshrimpy.quik.categorization.SmsCategorizer
+import dev.octoshrimpy.quik.categorization.TransactionParser
 import dev.octoshrimpy.quik.interactor.UpdateBadge
 import dev.octoshrimpy.quik.manager.ActiveConversationManager
 import dev.octoshrimpy.quik.manager.NotificationManager
 import dev.octoshrimpy.quik.manager.ShortcutManager
 import dev.octoshrimpy.quik.repository.ContactRepository
 import dev.octoshrimpy.quik.repository.ConversationRepository
+import dev.octoshrimpy.quik.repository.FinanceRepository
 import dev.octoshrimpy.quik.repository.MessageContentFilterRepository
 import dev.octoshrimpy.quik.repository.MessageRepository
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
@@ -53,6 +55,9 @@ class InjectionWorkerFactory @Inject constructor(
     private val contactRepo: ContactRepository,
     // Injected so we can pass it to ReceiveSmsWorker and CategorizeAllMessagesWorker
     private val categorizer: SmsCategorizer,
+    // Phase 2: transaction parser + finance repo for ParseAllTransactionsWorker
+    private val transactionParser: TransactionParser,
+    private val financeRepo: FinanceRepository,
 ) : WorkerFactory() {
     override fun createWorker(
         appContext: Context,
@@ -80,6 +85,9 @@ class InjectionWorkerFactory @Inject constructor(
                 instance.contactsRepo = contactRepo
                 // Wire the categorizer so every new SMS is auto-classified
                 instance.categorizer = categorizer
+                // Phase 2: wire transaction parser + finance repo
+                instance.transactionParser = transactionParser
+                instance.financeRepo       = financeRepo
             }
             is ReceiveMmsWorker -> {
                 instance.syncRepo = syncRepo
@@ -98,6 +106,12 @@ class InjectionWorkerFactory @Inject constructor(
             is CategorizeAllMessagesWorker -> {
                 instance.categorizer = categorizer
                 instance.prefs = prefs
+            }
+            // Phase 2: wire the transaction backfill worker
+            is ParseAllTransactionsWorker -> {
+                instance.transactionParser = transactionParser
+                instance.financeRepo       = financeRepo
+                instance.prefs             = prefs
             }
         }
 

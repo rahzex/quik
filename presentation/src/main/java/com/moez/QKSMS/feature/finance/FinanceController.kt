@@ -1,0 +1,170 @@
+/*
+ * Copyright (C) 2026 QUIK
+ *
+ * This file is part of QUIK.
+ */
+package dev.octoshrimpy.quik.feature.finance
+
+import android.content.res.ColorStateList
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import dev.octoshrimpy.quik.R
+import dev.octoshrimpy.quik.common.base.QkController
+import dev.octoshrimpy.quik.databinding.ControllerFinanceBinding
+import dev.octoshrimpy.quik.injection.appComponent
+import dev.octoshrimpy.quik.model.AccountBalance
+import dev.octoshrimpy.quik.model.ParsedTransaction
+import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
+import io.realm.RealmResults
+import java.text.NumberFormat
+import java.util.Calendar
+import java.util.Locale
+import javax.inject.Inject
+
+class FinanceController : QkController<
+        ControllerFinanceBinding,
+        FinanceView,
+        FinanceState,
+        FinancePresenter>(),
+    FinanceView {
+
+    @Inject override lateinit var presenter: FinancePresenter
+
+    private val monthSubject = PublishSubject.create<Pair<Int, Int>>()
+    override val monthSelectedIntent: Observable<Pair<Int, Int>> = monthSubject
+
+    private val monthPills = mutableListOf<TextView>()
+    private val months     = mutableListOf<Pair<Int, Int>>()
+
+    override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup) =
+        ControllerFinanceBinding.inflate(inflater, container, false)
+
+    override fun onAttach(view: View) {
+        appComponent.inject(this)
+        super.onAttach(view)
+        presenter.bindIntents(this)
+    }
+
+    override fun onViewCreated() {
+        buildMonthPills()
+        binding.accountsRecycler.layoutManager = LinearLayoutManager(activity)
+        binding.accountsRecycler.adapter = AccountsAdapter()
+        binding.upcomingRecycler.layoutManager = LinearLayoutManager(activity)
+        binding.upcomingRecycler.adapter = UpcomingAdapter()
+    }
+
+    private fun buildMonthPills() {
+        val monthNames = listOf("Jan","Feb","Mar","Apr","May","Jun",
+            "Jul","Aug","Sep","Oct","Nov","Dec")
+        months.clear(); monthPills.clear()
+        binding.monthSwitcher.removeAllViews()
+        for (offset in -2..0) {
+            val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
+            val y = cal.get(Calendar.YEAR)
+            val m = cal.get(Calendar.MONTH) + 1
+            months.add(Pair(y, m))
+            val pill = TextView(activity).apply {
+                text = monthNames[m - 1]
+                textSize = 11f
+                setPaddingRelative(18, 6, 18, 6)
+                background = ContextCompat.getDrawable(context, R.drawable.rounded_rectangle_8dp)
+                setOnClickListener { monthSubject.onNext(Pair(y, m)) }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+            monthPills.add(pill)
+            binding.monthSwitcher.addView(pill)
+        }
+    }
+
+    override fun render(state: FinanceState) {
+        val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+            .apply { maximumFractionDigits = 0 }
+
+        months.forEachIndexed { i, (y, m) ->
+            val active = y == state.selectedYear && m == state.selectedMonth
+            monthPills.getOrNull(i)?.setTextColor(
+                ContextCompat.getColor(activity!!, if (active) R.color.tools_theme else android.R.color.darker_gray)
+            )
+        }
+
+        binding.statSpent.text    = fmt.format(state.totalSpent)
+        binding.statReceived.text = fmt.format(state.totalReceived)
+
+        val prefix = if (state.netSaved >= 0) "+" else ""
+        binding.netAmount.text = "$prefix${fmt.format(state.netSaved)}"
+        binding.spentProgress.progress = (state.spentPercent * 100).toInt()
+        val pct = (state.spentPercent * 100).toInt()
+        binding.progressSpentLabel.text = "Spent $pct%"
+        binding.progressSavedLabel.text = "Saved ${100 - pct}%"
+
+        val accounts = state.accounts
+        binding.accountsEmpty.isVisible    = accounts == null || accounts.isEmpty()
+        binding.accountsRecycler.isVisible = accounts != null && accounts.isNotEmpty()
+        (binding.accountsRecycler.adapter as? AccountsAdapter)?.update(accounts)
+
+        val upcoming = state.upcomingBills
+        binding.upcomingEmpty.isVisible    = upcoming.isEmpty()
+        binding.upcomingRecycler.isVisible = upcoming.isNotEmpty()
+        (binding.upcomingRecycler.adapter as? UpcomingAdapter)?.update(upcoming)
+    }
+
+    // ── Adapters ─────────────────────────────────────────────────────────────
+
+    inner class AccountsAdapter : RecyclerView.Adapter<AccountsAdapter.VH>() {
+        private var items: List<AccountBalance> = emptyList()
+        fun update(results: RealmResults<AccountBalance>?) {
+            items = results?.let { ArrayList(it) } ?: emptyList()
+            notifyDataSetChanged()
+        }
+        override fun getItemCount() = items.size
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            VH(LayoutInflater.from(parent.context)
+                .inflate(R.layout.finance_account_list_item, parent, false))
+        override fun onBindViewHolder(h: VH, pos: Int) = h.bind(items[pos])
+
+        inner class VH(v: View) : RecyclerView.ViewHolder(v) {
+            fun bind(item: AccountBalance) {
+                val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                    .apply { maximumFractionDigits = 0 }
+                itemView.findViewById<TextView>(R.id.accountInitials).text =
+                    item.senderPattern.take(2).uppercase()
+                itemView.findViewById<TextView>(R.id.accountSender).text  = item.senderPattern
+                itemView.findViewById<TextView>(R.id.accountNumber).text  = "·· ${item.accountLast4}"
+                itemView.findViewById<TextView>(R.id.accountBalance).text = fmt.format(item.balance)
+            }
+        }
+    }
+
+    inner class UpcomingAdapter : RecyclerView.Adapter<UpcomingAdapter.VH>() {
+        private var items: List<ParsedTransaction> = emptyList()
+        fun update(list: List<ParsedTransaction>) { items = list; notifyDataSetChanged() }
+        override fun getItemCount() = items.size
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            VH(LayoutInflater.from(parent.context)
+                .inflate(R.layout.finance_upcoming_list_item, parent, false))
+        override fun onBindViewHolder(h: VH, pos: Int) = h.bind(items[pos])
+
+        inner class VH(v: View) : RecyclerView.ViewHolder(v) {
+            fun bind(item: ParsedTransaction) {
+                val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+                    .apply { maximumFractionDigits = 0 }
+                itemView.findViewById<TextView>(R.id.reminderTitle).text  =
+                    item.merchant.ifBlank { "Credit card bill" }
+                itemView.findViewById<TextView>(R.id.reminderMeta).text   = "Due ${item.reference}"
+                itemView.findViewById<TextView>(R.id.reminderAmount).text = fmt.format(item.amount)
+            }
+        }
+    }
+}
+

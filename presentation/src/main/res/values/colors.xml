@@ -68,6 +68,14 @@
     <!-- This colour should only ever be used for attrs with the tools tag -->
     <color name="tools_theme">#00838F</color>
 
+    <!-- Phase 2 Finance Dashboard semantic colors from DESIGN_SYSTEM.md:
+         red text #C0392B, red background #FFF0F0,
+         green text #1A7F4B, green background #F0FAF4 -->
+    <color name="finance_red_text">#C0392B</color>
+    <color name="finance_red_bg">#FFF0F0</color>
+    <color name="finance_green_text">#1A7F4B</color>
+    <color name="finance_green_bg">#F0FAF4</color>
+
     <array name="random_colors">
         <item>#06C9AF</item>
         <item>#6DC966</item>

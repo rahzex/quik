@@ -48,6 +48,16 @@
     <string name="main_title_selected">%d selected</string>
     <string name="main_nav_finance">Finance</string>
     <string name="main_finance_placeholder">Finance dashboard — Coming in Phase 2</string>
+
+    <!-- Finance Dashboard (Phase 2) -->
+    <string name="finance_title">Finance</string>
+    <string name="finance_spent">Spent</string>
+    <string name="finance_received">Received</string>
+    <string name="finance_net_saved">Net saved</string>
+    <string name="finance_accounts">Accounts</string>
+    <string name="finance_upcoming">Upcoming</string>
+    <string name="finance_no_accounts">No account balances detected yet</string>
+    <string name="finance_no_upcoming">No upcoming bills detected</string>
     <string name="main_title_messages">Messages</string>
     <string name="main_search_hint">Search messages…</string>
     <string name="main_menu_clear">Clear</string>

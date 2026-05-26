@@ -178,27 +178,16 @@
         app:layout_constraintTop_toBottomOf="@id/tabsDivider"
         tools:text="No messages" />
 
-    <!-- Finance placeholder -->
-    <LinearLayout
-        android:id="@+id/financePlaceholder"
+    <!-- Finance Dashboard container (Phase 2) — FinanceController is pushed here -->
+    <FrameLayout
+        android:id="@+id/financeContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:orientation="vertical"
-        android:gravity="center"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tabsDivider">
-
-        <dev.octoshrimpy.quik.common.widget.QkTextView
-            style="@style/TextSecondary"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/main_finance_placeholder" />
-
-    </LinearLayout>
+        app:layout_constraintTop_toBottomOf="@id/tabsDivider" />
 
     <!-- Syncing overlay ViewStub -->
     <ViewStub

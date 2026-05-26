@@ -307,10 +307,14 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
         val hasAmount       = AMOUNT_PATTERN.containsMatchIn(bodyTrimmed)
         val hasTxnKeyword   = TXN_BODY_KEYWORDS.containsMatchIn(bodyTrimmed)
 
-        // HDFC notification senders → UPDATES (unless body has actual transaction)
+        // HDFC notification senders → UPDATES (unless body is a real UPI transfer)
         if (HDFC_NOTIF_SENDER.containsMatchIn(addr)) {
-            return if (hasAmount && hasTxnKeyword) MessageCategory.TRANSACTIONS
-            else MessageCategory.UPDATES
+            // "Amt Sent Rs." messages come from HDFCBN senders but are genuine transfers.
+            // Treat them as TRANSACTIONS before routing to UPDATES.
+            return if (bodyTrimmed.startsWith("Amt Sent", ignoreCase = true) || (hasAmount && hasTxnKeyword))
+                MessageCategory.TRANSACTIONS
+            else
+                MessageCategory.UPDATES
         }
 
         // Bandhan Bank security/advisory messages → UPDATES

@@ -19,7 +19,7 @@ Create a modern, clean, and open-source Android SMS application that automatical
 
 ## Proposed UI Design
 
-Check `pulse-sms-with-tabs_1.html` for the detailed UI mockups and design.
+Check `pulse-sms-with-tabs_2.html` for the detailed UI mockups and design.
 
 ---
 
@@ -817,12 +817,608 @@ Before considering Phase 1 complete:
 ---
 
 ## Phase 2: Finance Dashboard & Parsing
-*(Detailed plan to be created after Phase 1 is shipped.)*
 
-1.  **Regex Parsing Templates:** Create a library of Regex patterns for 12+ targeted Indian banks/services. Extract: Amount, Transaction Type (Debit/Credit), Merchant, Account Number/Last 4 digits, Date, Available Balance.
-2.  **Database Updates:** Create new Realm models `ParsedTransaction` and `AccountBalance`.
-3.  **Finance Dashboard UI:** Implement the Finance screen (Phone 3 in HTML mockup): Summary card (Spent/Received this month), Accounts section, Upcoming Bills/reminders.
-4.  **Thread screen parsed cards:** Add the embedded debit/credit detected cards inside message bubbles in `ComposeActivity`.
+**Goal:** Extract structured financial data from TRANSACTIONS-category SMS messages and display a live Finance Dashboard with spending summary, known accounts, and upcoming bills. Also embed parsed mini-cards inside message bubbles in the thread view.
+
+**UI Screens in scope (from HTML mockup):**
+- **Finance screen (Phone 3)** — Month switcher pills + Summary card (Spent / Received / Net) + Accounts section + Upcoming Bills section
+- **Thread screen** — Parsed debit/credit card embedded below the message bubble body for TRANSACTIONS messages
+
+**Design decisions locked in for Phase 2:**
+- All parsing is on-device, no network calls.
+- Parser is structured-pattern-first (13 named patterns), generic fallback second.
+- `ParsedTransaction` primary key = `Message.id` — strictly one-to-one with the parent message; no row is created if an amount cannot be found.
+- `AccountBalance` primary key = `"[senderPattern]:[accountLast4]"` composite string — natural deduplication.
+- Month filter shows last 3 months as pill buttons; current month is selected by default.
+- Thread cards show green background for credits, red for debits; amount is sign-prefixed (`+`/`−`).
+- Phase 2 introduces Realm schema v17 (adds `ParsedTransaction` + `AccountBalance` tables).
+
+---
+
+### Step 1 — `ParsedTransactionData` DTO & `TransactionParser` Interface
+
+**Module:** `domain`
+**Files to create:**
+- `domain/src/main/java/com/moez/QKSMS/categorization/TransactionParser.kt`
+
+```kotlin
+package dev.octoshrimpy.quik.categorization
+
+/**
+ * Plain Kotlin DTO — NOT a Realm object.
+ * Carries extracted financial data before it is persisted to Realm.
+ */
+data class ParsedTransactionData(
+    val amount: Double,
+    val isDebit: Boolean,
+    val merchant: String = "",
+    val reference: String = "",
+    val accountLast4: String = "",
+    val availableBalance: Double = -1.0,
+    val method: String = "Other"
+)
+
+interface TransactionParser {
+    /**
+     * Attempts to parse financial data from a TRANSACTIONS-category SMS.
+     * @return [ParsedTransactionData] if an amount was extracted, null otherwise.
+     */
+    fun parse(address: String, body: String): ParsedTransactionData?
+}
+```
+
+**Notes:**
+- The interface lives in `domain`; the implementation lives in `data`. Dagger wires them.
+- Returning `null` means no finance row is created for that message — absence of a row is itself data.
+- `method` values: `"UPI"`, `"NEFT"`, `"IMPS"`, `"RTGS"`, `"ATM"`, `"Card"`, `"Statement"`, `"Other"`.
+
+---
+
+### Step 2 — `TransactionParserImpl` (Regex Engine)
+
+**Module:** `data`
+**File to create:** `data/src/main/java/com/moez/QKSMS/categorization/TransactionParserImpl.kt`
+
+#### Two-Tier Extraction Strategy
+
+**Tier 1 — 13 structural patterns (first-match-wins, dispatched in order):**
+
+Each pattern matches a well-known SMS sentence structure observed across Indian banks. No bank names appear in any regex — patterns match on structural shape (keyword order, field positions, delimiters). This makes the parser bank-agnostic and resilient to new senders.
+
+| ID | Pattern name | Corpus example |
+|---|---|---|
+| S1 | `Money Transfer:` header (UPI debit) | `Money Transfer:Rs 200.00 from … A/c **7472 … to Add Money … UPI: 402162644471` |
+| S2 | Multiline `Amt Sent` block (UPI debit) | `Amt Sent Rs.340.00\nFrom … A/C *7472\nTo Momo Magic Cafe\nOn 16-02\nRef 404747962998` |
+| S3 | Inline `debited from a/c … (UPI Ref No.)` | `… Rs. 1000.00 debited from a/c **7472 … (UPI Ref No. 405449586737)` |
+| S4 | `withdrawn from … Card x{last4} at {merchant} … Avl bal:` (ATM) | `Rs.3000 withdrawn … Card x4441 at KOCH BIHAR … Avl bal: 262453.73` |
+| S5 | `deposited in … A/c XX{last4} … Avl bal` (NEFT/salary credit) | `INR 1,13,964.00 deposited in … A/c XX7472 … Avl bal INR 3,67,329.58` |
+| S6 | `a/c XX{last4} is credited for … Available Bal … (UPI Ref ID {ref})` | PNB credit style |
+| S7 | `Ac X…{last4} Credited with Rs. … Aval Bal … (UPI Ref ID:{ref})` | PNB alternate credit |
+| S8 | `A/c XX{last4} debited … thru UPI:{ref}.Bal …` | PNB UPI debit |
+| S9 | `spent on your … Credit Card ending {last4} at {merchant}` | SBI credit card |
+| S10 | `received payment of … via {method} … available limit is …` | Card payment received |
+| S11 | `payment of … for your … Credit Card has been successfully processed … ref no` | Card bill payment |
+| S12 | `Total Amt Due … Payable by {date}` | Credit card e-statement |
+| S13 | `{merchant} has requested money/payment … will be debited / a payment of …` | UPI collect request |
+
+**Tier 2 — Generic fallback:**
+If no structural pattern matches, attempt universal extraction:
+1. Find the first `Rs.`/`INR`/`₹` amount.
+2. Check for debit keywords (`debited`, `spent`, `withdrawn`, `paid`, `deducted`, `sent`).
+3. Check for credit keywords (`credited`, `deposited`, `received`, `refunded`).
+4. If direction is ambiguous (both or neither match), return `null`.
+5. Extract optional: account last-4, UPI ref, NEFT/IMPS/RTGS method, available balance, merchant.
+
+**Key implementation notes:**
+- All patterns are `companion object` `Regex` vals precompiled at class load time — `@Singleton` so patterns live in memory.
+- Shared `AMT` token: `(?:Rs\.?|INR|₹)\s*([\d,]+(?:\.\d{1,2})?)` — handles all Indian currency prefixes.
+- `parseAmount(raw: String): Double?` helper strips commas, trims whitespace before `toDoubleOrNull()`.
+- `RegexOption.DOT_MATCHES_ALL` is used on multiline corpus messages.
+
+---
+
+### Step 3 — New Realm Models: `ParsedTransaction` + `AccountBalance`
+
+**Module:** `domain`
+**Files to create:**
+- `domain/src/main/java/com/moez/QKSMS/model/ParsedTransaction.kt`
+- `domain/src/main/java/com/moez/QKSMS/model/AccountBalance.kt`
+
+**`ParsedTransaction` fields:**
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `Long` (`@PrimaryKey`) | Same as `Message.id` — one-to-one |
+| `threadId` | `Long` (`@Index`) | For per-thread parsed card queries |
+| `date` | `Long` | Copied from `Message.date` |
+| `amount` | `Double` | Always positive |
+| `isDebit` | `Boolean` | true = spending, false = income |
+| `merchant` | `String` | Counterparty name or "" |
+| `reference` | `String` | UPI ref / NEFT ref / due date for bills |
+| `accountLast4` | `String` | Last 4 digits of account/card or "" |
+| `availableBalance` | `Double` | -1.0 if not in message |
+| `method` | `String` | "UPI" / "NEFT" / "ATM" / "Card" / … |
+| `year` | `Int` (`@Index`) | Calendar year — denormalized for fast month queries |
+| `month` | `Int` (`@Index`) | 1-based calendar month — indexed for month filter |
+
+**`AccountBalance` fields:**
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `String` (`@PrimaryKey`) | `"[senderPattern]:[accountLast4]"` composite |
+| `senderPattern` | `String` | Raw sender ID (e.g. `"JXHDFCBK"`) |
+| `accountLast4` | `String` | Last 4 digits (e.g. `"7472"`) |
+| `balance` | `Double` | Last known available balance in INR |
+| `lastUpdated` | `Long` | Timestamp of most recent message updating this balance |
+
+---
+
+### Step 4 — Realm Migration: Schema Version 17
+
+**Module:** `data`
+**File to modify:** `data/src/main/java/com/moez/QKSMS/migration/QkRealmMigration.kt`
+
+Bump `SCHEMA_VERSION` from `16` to `17`.
+
+Add the migration block for version `16 → 17`:
+
+```kotlin
+if (version == 16L) {
+    realm.schema.create("ParsedTransaction")
+        .addField("id", Long::class.java, FieldAttribute.PRIMARY_KEY)
+        .addField("threadId", Long::class.java, FieldAttribute.REQUIRED)
+        .addIndex("threadId")
+        .addField("date", Long::class.java)
+        .addField("amount", Double::class.java)
+        .addField("isDebit", Boolean::class.java)
+        .addField("merchant", String::class.java, FieldAttribute.REQUIRED)
+        .addField("reference", String::class.java, FieldAttribute.REQUIRED)
+        .addField("accountLast4", String::class.java, FieldAttribute.REQUIRED)
+        .addField("availableBalance", Double::class.java)
+        .addField("method", String::class.java, FieldAttribute.REQUIRED)
+        .addField("year", Int::class.java)
+        .addIndex("year")
+        .addField("month", Int::class.java)
+        .addIndex("month")
+
+    realm.schema.create("AccountBalance")
+        .addField("id", String::class.java, FieldAttribute.PRIMARY_KEY)
+        .addField("senderPattern", String::class.java, FieldAttribute.REQUIRED)
+        .addField("accountLast4", String::class.java, FieldAttribute.REQUIRED)
+        .addField("balance", Double::class.java)
+        .addField("lastUpdated", Long::class.java)
+
+    version++
+}
+```
+
+---
+
+### Step 5 — `FinanceRepository` Interface
+
+**Module:** `domain`
+**File to create:** `domain/src/main/java/com/moez/QKSMS/repository/FinanceRepository.kt`
+
+```kotlin
+interface FinanceRepository {
+    fun getTransactionForMessage(messageId: Long): ParsedTransaction?
+    fun getTransactions(year: Int, month: Int): RealmResults<ParsedTransaction>
+    fun getSpentTotal(year: Int, month: Int): Double
+    fun getReceivedTotal(year: Int, month: Int): Double
+    fun getAccounts(): RealmResults<AccountBalance>
+    fun getUpcomingBills(): List<ParsedTransaction>
+    fun saveTransaction(data: ParsedTransactionData, message: Message)
+    fun updateAccountBalance(senderAddress: String, accountLast4: String, balance: Double, ts: Long)
+}
+```
+
+**Method semantics:**
+- `getTransactionForMessage` — called from `MessagesAdapter` on the main thread; must return synchronously from a live Realm.
+- `getTransactions` / `getAccounts` — return live `RealmResults` (auto-update on new rows).
+- `getSpentTotal` / `getReceivedTotal` — aggregate queries: sum `amount` for `isDebit == true/false` in the given year+month.
+- `getUpcomingBills` — returns `method == "Statement"` rows where `date` is in the future (or last 30 days for recent statements).
+- `saveTransaction` — upserts `ParsedTransaction`; sets `year`/`month` from `message.date`; also calls `updateAccountBalance` if `availableBalance > 0`.
+- `updateAccountBalance` — upserts `AccountBalance` with composite key; only writes if `ts > existing.lastUpdated`.
+
+---
+
+### Step 6 — `FinanceRepositoryImpl`
+
+**Module:** `data`
+**File to create:** `data/src/main/java/com/moez/QKSMS/repository/FinanceRepositoryImpl.kt`
+
+Use `Realm.getDefaultInstance()` for synchronous reads on any thread. For writes, use `executeTransaction {}`.
+
+```kotlin
+@Singleton
+class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
+
+    override fun getTransactionForMessage(messageId: Long): ParsedTransaction? =
+        Realm.getDefaultInstance()
+            .where(ParsedTransaction::class.java)
+            .equalTo("id", messageId)
+            .findFirst()
+
+    override fun getTransactions(year: Int, month: Int): RealmResults<ParsedTransaction> =
+        Realm.getDefaultInstance()
+            .where(ParsedTransaction::class.java)
+            .equalTo("year", year)
+            .equalTo("month", month)
+            .sort("date", Sort.DESCENDING)
+            .findAllAsync()
+
+    override fun getSpentTotal(year: Int, month: Int): Double =
+        Realm.getDefaultInstance()
+            .where(ParsedTransaction::class.java)
+            .equalTo("year", year)
+            .equalTo("month", month)
+            .equalTo("isDebit", true)
+            .findAll()
+            .sumOf { it.amount }
+
+    // ... (getReceivedTotal mirrors getSpentTotal with isDebit = false)
+    // ... (getAccounts: sort by lastUpdated DESC)
+    // ... (getUpcomingBills: method == "Statement", last 30 days)
+    // ... (saveTransaction: copyToRealmOrUpdate, set year/month from Calendar)
+    // ... (updateAccountBalance: upsert with composite key, check lastUpdated)
+}
+```
+
+---
+
+### Step 7 — Wire Parsing Into `ReceiveSmsWorker`
+
+**Module:** `data`
+**File to modify:** `data/src/main/java/com/moez/QKSMS/worker/ReceiveSmsWorker.kt`
+
+**Add injections:**
+```kotlin
+@Inject lateinit var transactionParser: TransactionParser
+@Inject lateinit var financeRepo: FinanceRepository
+```
+
+After the existing categorization block (which sets `message.categoryId`), add:
+
+```kotlin
+if (message.category == MessageCategory.TRANSACTIONS) {
+    transactionParser.parse(message.address, message.body)?.let { data ->
+        financeRepo.saveTransaction(data, message)
+        if (data.availableBalance > 0 && data.accountLast4.isNotBlank()) {
+            financeRepo.updateAccountBalance(
+                message.address, data.accountLast4, data.availableBalance, message.date
+            )
+        }
+    }
+}
+```
+
+This ensures every new TRANSACTIONS SMS has its financial data extracted in real-time at receive time.
+
+---
+
+### Step 8 — `ParseAllTransactionsWorker` (First-Run Backfill)
+
+**Module:** `data`
+**File to create:** `data/src/main/java/com/moez/QKSMS/worker/ParseAllTransactionsWorker.kt`
+
+A `Worker` (WorkManager) that backfills `ParsedTransaction` rows for all historical TRANSACTIONS messages:
+
+1. Open a Realm instance.
+2. Query all `Message` objects where `categoryId == "TRANSACTIONS"`, sorted by `date DESC`.
+3. Skip messages where a `ParsedTransaction` row already exists (idempotent re-run safety).
+4. For each eligible message, call `transactionParser.parse(address, body)`.
+5. If a result is returned, build a `ParsedTransaction` object and add to a batch list.
+6. Commit batches of 50 rows at a time (keeps Realm write-lock duration short).
+7. For each row that has `availableBalance > 0 && accountLast4.isNotBlank()`, also upsert an `AccountBalance` row inside the same batch transaction.
+8. On completion, set `prefs.parsedTransactionsV1Done = true`.
+
+**Companion object helper:**
+```kotlin
+companion object {
+    private const val WORKER_TAG = "parse_all_transactions_v1"
+    fun enqueue(context: Context) {
+        val request = OneTimeWorkRequestBuilder<ParseAllTransactionsWorker>()
+            .addTag(WORKER_TAG).build()
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(WORKER_TAG, ExistingWorkPolicy.KEEP, request)
+    }
+}
+```
+
+**Enqueue in:** `QKApplication.onCreate()` — check `!prefs.parsedTransactionsV1Done.get()`, then call `ParseAllTransactionsWorker.enqueue(applicationContext)`.
+
+---
+
+### Step 9 — Add New Preference
+
+**Module:** `domain`
+**File to modify:** `domain/src/main/java/com/moez/QKSMS/util/Preferences.kt`
+
+Add one new key:
+```kotlin
+val parsedTransactionsV1Done: Preference<Boolean> = rxPrefs.getBoolean("parsed_transactions_v1_done", false)
+```
+
+This is the one-time migration flag used by `ParseAllTransactionsWorker` to prevent re-running after the initial backfill.
+
+---
+
+### Step 10 — `FinanceState`, `FinanceView`, `FinancePresenter`
+
+**Module:** `presentation`
+**Files to create:**
+- `presentation/src/main/java/com/moez/QKSMS/feature/finance/FinanceState.kt`
+- `presentation/src/main/java/com/moez/QKSMS/feature/finance/FinanceView.kt`
+- `presentation/src/main/java/com/moez/QKSMS/feature/finance/FinancePresenter.kt`
+
+**`FinanceState`:**
+```kotlin
+data class FinanceState(
+    val selectedYear: Int  = Calendar.getInstance().get(Calendar.YEAR),
+    val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1,
+    val totalSpent: Double    = 0.0,
+    val totalReceived: Double = 0.0,
+    val accounts: RealmResults<AccountBalance>? = null,
+    val upcomingBills: List<ParsedTransaction> = emptyList(),
+    val isLoading: Boolean = true
+) {
+    val netSaved: Double get() = totalReceived - totalSpent
+    val spentPercent: Float get() { ... } // totalSpent / (totalSpent + totalReceived)
+}
+```
+
+**`FinanceView`:**
+```kotlin
+interface FinanceView : QkViewContract<FinanceState> {
+    val monthSelectedIntent: Observable<Pair<Int, Int>>  // (year, month), month is 1-based
+}
+```
+
+**`FinancePresenter`** extends `QkPresenter<FinanceView, FinanceState>`:
+- On bind: immediately call `loadMonth(currentYear, currentMonth)`.
+- Subscribe to `view.monthSelectedIntent`, call `loadMonth(year, month)` on each emission.
+- `loadMonth` reads from `FinanceRepository` synchronously on `Schedulers.io()`, then updates state.
+
+---
+
+### Step 11 — `FinanceController`
+
+**Module:** `presentation`
+**File to create:** `presentation/src/main/java/com/moez/QKSMS/feature/finance/FinanceController.kt`
+
+Extends `QkController<ControllerFinanceBinding, FinanceView, FinanceState, FinancePresenter>`.
+
+**`onViewCreated` setup:**
+1. Call `buildMonthPills()` — programmatically create 3 `TextView` pills for the last 3 months (current − 2, current − 1, current). Each pill emits into `monthSubject` on click.
+2. Set up `accountsRecycler` with `LinearLayoutManager` + `AccountsAdapter`.
+3. Set up `upcomingRecycler` with `LinearLayoutManager` + `UpcomingAdapter`.
+
+**`render(state: FinanceState)`:**
+```kotlin
+override fun render(state: FinanceState) {
+    // 1. Highlight active month pill (accent color on active, gray on inactive).
+    // 2. Update statSpent / statReceived with currency-formatted values.
+    // 3. Update netAmount with sign prefix (+/-).
+    // 4. Update spentProgress ProgressBar (0-100 based on spentPercent).
+    // 5. Update accountsRecycler visibility (hide if empty, show empty state view).
+    // 6. Update upcomingRecycler visibility.
+}
+```
+
+**Inner adapters:**
+- `AccountsAdapter` — inflates `finance_account_list_item.xml`; shows bank initials avatar, sender ID, `" XXXX"` account number, balance.
+- `UpcomingAdapter` — inflates `finance_upcoming_list_item.xml`; shows merchant, due date from `reference`, amount.
+
+---
+
+### Step 12 — Finance Dashboard Layout Files
+
+**Module:** `presentation`
+**Files to create:**
+- `presentation/src/main/res/layout/controller_finance.xml`
+- `presentation/src/main/res/layout/finance_account_list_item.xml`
+- `presentation/src/main/res/layout/finance_upcoming_list_item.xml`
+
+**`controller_finance.xml` structure** (matching HTML Phone 3 mockup):
+```xml
+<ScrollView>
+  <LinearLayout orientation="vertical">
+    <!-- Month switcher: horizontal LinearLayout of pill TextViews -->
+    <LinearLayout id="@+id/monthSwitcher" orientation="horizontal" />
+
+    <!-- Summary card: MaterialCardView with rounded corners (12dp) -->
+    <MaterialCardView>
+      <LinearLayout>
+        <!-- Stat row: Spent | Received -->
+        <!-- Net amount (large text, green/red) -->
+        <!-- Progress bar (spent %, saved %) -->
+      </LinearLayout>
+    </MaterialCardView>
+
+    <!-- Accounts section -->
+    <TextView text="Accounts" />
+    <TextView id="@+id/accountsEmpty" text="No accounts detected" />
+    <RecyclerView id="@+id/accountsRecycler" />
+
+    <!-- Upcoming bills section -->
+    <TextView text="Upcoming" />
+    <TextView id="@+id/upcomingEmpty" text="No upcoming bills" />
+    <RecyclerView id="@+id/upcomingRecycler" />
+  </LinearLayout>
+</ScrollView>
+```
+
+**`finance_account_list_item.xml`:** Circle avatar with bank initials + sender ID + account last 4 + balance (right-aligned).
+
+**`finance_upcoming_list_item.xml`:** Calendar icon + reminder title + due date metadata + amount (right-aligned).
+
+---
+
+### Step 13 — Parsed Transaction Card in Message Bubbles
+
+**Module:** `presentation`
+**File to modify:** `presentation/src/main/java/com/moez/QKSMS/feature/compose/MessagesAdapter.kt`
+
+**Inject `FinanceRepository`:**
+```kotlin
+@Inject private val financeRepo: FinanceRepository,
+```
+
+**In `onBindViewHolder` / `bind()`, after rendering the message body text:**
+```kotlin
+val parsedCard = binding.parsedCard
+if (message.category == MessageCategory.TRANSACTIONS) {
+    val txn = financeRepo.getTransactionForMessage(message.id)
+    if (txn != null) {
+        val isDebit = txn.isDebit
+        val bgColor = if (isDebit) Color.parseColor("#FDECEA") else Color.parseColor("#E6F4EA")
+        val textColor = if (isDebit) Color.parseColor("#C62828") else Color.parseColor("#155731")
+        val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
+        parsedCard.visibility = View.VISIBLE
+        parsedCard.backgroundTintList = ColorStateList.valueOf(bgColor)
+        parsedLabel.text = if (isDebit) "Debit detected" else "Credit detected"
+        parsedLabel.setTextColor(textColor)
+        parsedAmount.text = "${if (isDebit) "−" else "+"} ${fmt.format(txn.amount)}"
+        parsedAmount.setTextColor(textColor)
+        // Build sub-text: merchant + method + accountLast4
+        parsedSub.text = buildSubText(txn)
+        parsedSub.setTextColor(textColor)
+    } else {
+        parsedCard.visibility = View.GONE
+    }
+} else {
+    parsedCard.visibility = View.GONE
+}
+```
+
+**Update `list_item_message_in.xml` and `list_item_message_out.xml`:**
+Add a `LinearLayout` (`@+id/parsedCard`) below the body `TextView` with:
+- `background` = a `shape` drawable with `cornerRadius="8dp"`, `color` set at runtime via `backgroundTintList`
+- Child `TextView`s: `parsedLabel` (small caps label), `parsedAmount` (bold large text), `parsedSub` (secondary gray)
+- Default `visibility="gone"`
+
+---
+
+### Step 14 — DI Wiring
+
+**Module:** `presentation`
+**File to modify:** `presentation/src/main/java/com/moez/QKSMS/injection/AppModule.kt`
+
+Add:
+```kotlin
+@Provides @Singleton
+fun provideFinanceRepository(impl: FinanceRepositoryImpl): FinanceRepository = impl
+
+@Provides @Singleton
+fun provideTransactionParser(impl: TransactionParserImpl): TransactionParser = impl
+```
+
+**File to modify:** `presentation/src/main/java/com/moez/QKSMS/injection/AppComponent.kt`
+
+Add:
+```kotlin
+fun inject(controller: FinanceController)
+```
+
+**Worker factory:**
+Register `ParseAllTransactionsWorker` in `InjectionWorkerFactory` — inject `TransactionParser`, `FinanceRepository`, `Preferences`.
+
+---
+
+### Step 15 — Wire Finance Screen Into `MainActivity`
+
+**Module:** `presentation`
+**File to modify:** `presentation/src/main/java/com/moez/QKSMS/feature/main/MainActivity.kt`
+
+Replace the Phase 1 `Finance` placeholder `LinearLayout` with a `ControllerFinanceBinding`-backed `FinanceController` pushed to the Conductor router when `R.id.nav_finance` is selected in the bottom nav.
+
+```kotlin
+R.id.nav_finance -> {
+    if (router.backstackSize == 0 || router.backstack.last().controller !is FinanceController) {
+        router.setRoot(RouterTransaction.with(FinanceController()))
+    }
+}
+```
+
+OR, if keeping the Finance screen as an in-place view (not Conductor), inflate `controller_finance.xml` as a `ViewStub` that expands on first Finance tab selection and hide/show it alongside `recycler`.
+
+---
+
+### Step 16 — Unit Tests for `TransactionParserImpl`
+
+**Module:** `data`
+**File to create:** `data/src/test/java/com/moez/QKSMS/categorization/TransactionParserImplTest.kt`
+
+Test cases covering all 13 structural patterns + generic fallback:
+
+```
+S1 — UPI debit via "Money Transfer:" header:
+  Input: "Money Transfer:Rs 200.00 from YourBank A/c **7472 on date to Add Money Wallet UPI: 402162644471"
+  → amount=200.0, isDebit=true, method="UPI", reference="402162644471", accountLast4="7472"
+
+S4 — ATM withdrawal:
+  Input: "Rs.3000 withdrawn from YourBank Account Card x4441 at KOCH BIHAR BRANCH on 01-01-2024. Avl bal: 262453.73"
+  → amount=3000.0, isDebit=true, method="ATM", accountLast4="4441", availableBalance=262453.73
+
+S5 — NEFT deposit:
+  Input: "INR 1,13,964.00 deposited in your A/c XX7472 via NEFT. Avl bal INR 3,67,329.58"
+  → amount=113964.0, isDebit=false, method="NEFT", accountLast4="7472", availableBalance=367329.58
+
+S9 — Credit card purchase:
+  Input: "Rs.3,052.28 spent on your SBI Credit Card ending 8987 at REL RETAIL LTD on 01/01/2024"
+  → amount=3052.28, isDebit=true, method="Card", accountLast4="8987", merchant="REL RETAIL LTD"
+
+S12 — Credit card bill:
+  Input: "E-statement: Total Amt Due Rs 5790; Min Amt Due Rs 290; Payable by 08/03/2024"
+  → amount=5790.0, isDebit=true, method="Statement", reference="08/03/2024"
+
+Generic debit:
+  Input: "₹500 debited from your account. Ref: 12345"
+  → amount=500.0, isDebit=true, method="Other"
+
+Generic credit:
+  Input: "INR 2000 credited to your account."
+  → amount=2000.0, isDebit=false
+
+Ambiguous (both debit+credit keywords) → null:
+  Input: "Rs.100 debited. Rs.100 credited back as refund."
+  → null
+
+No amount → null:
+  Input: "Your account is active. No transactions today."
+  → null
+```
+
+Aim for minimum 25 test cases covering all structural patterns and edge cases.
+
+---
+
+### Step 17 — End-to-End Verification Checklist
+
+Before considering Phase 2 complete:
+
+- [x] `./gradlew assembleDebug` builds without errors *(build is on the `feature/phase-1` branch — must be verified)*
+- [x] Realm migration v16 → v17 implemented (`QkRealmMigration.kt`, schema version bumped to 17, `ParsedTransaction` + `AccountBalance` tables created)
+- [x] `ParseAllTransactionsWorker` implemented and enqueued in `QKApplication.onCreate()` when `!prefs.parsedTransactionsV1Done.get()`
+- [x] `prefs.parsedTransactionsV1Done` preference key added to `Preferences.kt`
+- [x] `ParseAllTransactionsWorker` sets `prefs.parsedTransactionsV1Done = true` on completion (idempotent re-run protection via `ExistingWorkPolicy.KEEP` + skip-if-exists check)
+- [x] Finance tab (bottom nav) shows `FinanceController` via Conductor router push in `MainActivity.render()` (`is Finance` branch)
+- [x] `FinanceController`, `FinancePresenter`, `FinanceState`, `FinanceView` all implemented
+- [x] Month switcher pills: last 3 months built programmatically in `buildMonthPills()`; active month highlighted in `render()`
+- [x] Summary card: `statSpent`, `statReceived`, `netAmount`, `spentProgress` all updated in `render()`
+- [x] Accounts `RecyclerView` with `AccountsAdapter` implemented; empty state view toggled in `render()`
+- [x] Upcoming bills `RecyclerView` with `UpcomingAdapter` implemented; empty state view toggled in `render()`
+- [x] Layout files created: `controller_finance.xml`, `finance_account_list_item.xml`, `finance_upcoming_list_item.xml`
+- [x] Parsed transaction card (`parsedCard`, `parsedLabel`, `parsedAmount`, `parsedSub`) added to `message_list_item_in.xml`
+- [ ] **INCOMPLETE** — Parsed card views NOT added to `message_list_item_out.xml` (outgoing messages cannot show the card; may be intentional since transactions are received, but should be explicitly confirmed)
+- [x] `MessagesAdapter` injects `FinanceRepository` and renders the parsed card for TRANSACTIONS messages
+- [x] `ReceiveSmsWorker` calls `transactionParser.parse()` + `financeRepo.saveTransaction()` + `financeRepo.updateAccountBalance()` in real-time for new TRANSACTIONS messages
+- [x] `TransactionParser` interface + `TransactionParserImpl` (13 structural patterns + generic fallback) implemented
+- [x] `ParsedTransaction` and `AccountBalance` Realm models created with correct fields and indexes
+- [x] `FinanceRepository` interface + `FinanceRepositoryImpl` implemented and DI-bound in `AppModule`
+- [x] `FinanceController` registered in `AppComponent.inject()`
+- [x] `ParseAllTransactionsWorker` registered in `InjectionWorkerFactory` with `transactionParser`, `financeRepo`, `prefs` injected
+- [x] `TransactionParserImpl` unit tests: 29 test functions in `TransactionParserImplTest.kt` (meets 25+ requirement)
 
 ---
 

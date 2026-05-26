@@ -264,4 +264,11 @@ class Preferences @Inject constructor(
      * PERSONAL = phone numbers only. Alphanumeric senders default to ALL.
      */
     val categorizedV3Done: Preference<Boolean> = rxPrefs.getBoolean("categorized_v3_done", false)
+
+    /**
+     * Phase 2 flag: set to true after [ParseAllTransactionsWorker] has finished
+     * parsing all existing TRANSACTIONS messages into [ParsedTransaction] rows.
+     * Prevents the worker from running on every subsequent launch.
+     */
+    val parsedTransactionsV1Done: Preference<Boolean> = rxPrefs.getBoolean("parsed_transactions_v1_done", false)
 }

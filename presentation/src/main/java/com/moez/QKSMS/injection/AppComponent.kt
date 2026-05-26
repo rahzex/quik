@@ -38,6 +38,7 @@ import dev.octoshrimpy.quik.feature.blocking.messages.BlockedMessagesController
 import dev.octoshrimpy.quik.feature.blocking.numbers.BlockedNumbersController
 import dev.octoshrimpy.quik.feature.compose.editing.DetailedChipView
 import dev.octoshrimpy.quik.feature.conversationinfo.injection.ConversationInfoComponent
+import dev.octoshrimpy.quik.feature.finance.FinanceController
 import dev.octoshrimpy.quik.feature.messageutils.MessageUtilsController
 import dev.octoshrimpy.quik.feature.settings.SettingsController
 import dev.octoshrimpy.quik.feature.settings.about.AboutController
@@ -73,6 +74,7 @@ interface AppComponent {
     fun inject(controller: MessageUtilsController)
     fun inject(controller: SettingsController)
     fun inject(controller: SwipeActionsController)
+    fun inject(controller: FinanceController)
 
     fun inject(dialog: QkDialog)
 
