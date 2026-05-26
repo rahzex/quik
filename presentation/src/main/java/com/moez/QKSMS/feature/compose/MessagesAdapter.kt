@@ -269,6 +269,9 @@ class MessagesAdapter @Inject constructor(
             }
 
             body.apply {
+                // Outgoing: accent colour bg, white text (HTML: .bubble.out)
+                setBackgroundTint(theme.theme)
+                setTextColor(theme.textPrimary)
                 highlightColor = theme.theme.withAlpha(0x5d)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     textSelectHandle?.setTint(theme.theme.withAlpha(0xad))
@@ -293,9 +296,17 @@ class MessagesAdapter @Inject constructor(
                 setVisible(!canGroup(message, next), View.INVISIBLE)
             }
 
+            // Incoming bubbles: white background with border — no accent tint.
+            // Tinting is intentionally skipped so the border colour stays neutral.
             body.apply {
-                setTextColor(theme.textPrimary)
-                setBackgroundTint(theme.theme)
+                setTextColor(context.getColor(android.R.color.black).let {
+                    // Use primary text colour from the theme
+                    val attrs = intArrayOf(android.R.attr.textColorPrimary)
+                    val ta = context.obtainStyledAttributes(attrs)
+                    val color = ta.getColor(0, it)
+                    ta.recycle()
+                    color
+                })
                 highlightColor = R.attr.bubbleColor.withAlpha(0x5d)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     textSelectHandle?.setTint(R.attr.bubbleColor.withAlpha(0x7d))

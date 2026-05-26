@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Incoming bubble base: white fill + 1dp border. All corners 14dp, BL tail 3dp.
+     Used directly (no backgroundTint override) so the border colour stays neutral. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Border layer -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/separatorLight" />
+            <corners
+                android:topLeftRadius="14dp"
+                android:topRightRadius="14dp"
+                android:bottomRightRadius="14dp"
+                android:bottomLeftRadius="3dp" />
+        </shape>
+    </item>
+    <!-- White fill inset by 1dp to reveal border -->
+    <item
+        android:top="1dp"
+        android:left="1dp"
+        android:right="1dp"
+        android:bottom="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="?android:attr/windowBackground" />
+            <corners
+                android:topLeftRadius="13dp"
+                android:topRightRadius="13dp"
+                android:bottomRightRadius="13dp"
+                android:bottomLeftRadius="2dp" />
+            <padding
+                android:left="11dp"
+                android:top="8dp"
+                android:right="11dp"
+                android:bottom="8dp" />
+        </shape>
+    </item>
+</layer-list>
+
