@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Incoming message bubble: surface color in dark mode (#192025 bg + slightly lighter) -->
+    <color name="incoming_bubble">#242D35</color>
+    <!-- Incoming bubble text: light in dark mode -->
+    <color name="incoming_bubble_text">#E8EAF0</color>
+</resources>
+

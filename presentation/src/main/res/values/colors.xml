@@ -47,6 +47,9 @@
     <color name="bubbleDark">#11171B</color>
     <color name="bubbleBlack">#0F1113</color>
 
+    <color name="incoming_bubble">#EAECF0</color>
+    <color name="incoming_bubble_text">#111827</color>
+
     <color name="separatorLight">#0C000000</color>
     <color name="separatorDark">#1AFFFFFF</color>
 

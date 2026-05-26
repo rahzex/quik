@@ -296,22 +296,15 @@ class MessagesAdapter @Inject constructor(
                 setVisible(!canGroup(message, next), View.INVISIBLE)
             }
 
-            // Incoming bubbles: white background with border — no accent tint.
-            // Tinting is intentionally skipped so the border colour stays neutral.
+            // Incoming bubbles: theme-aware background + matching text color.
             body.apply {
-                setTextColor(context.getColor(android.R.color.black).let {
-                    // Use primary text colour from the theme
-                    val attrs = intArrayOf(android.R.attr.textColorPrimary)
-                    val ta = context.obtainStyledAttributes(attrs)
-                    val color = ta.getColor(0, it)
-                    ta.recycle()
-                    color
-                })
-                highlightColor = R.attr.bubbleColor.withAlpha(0x5d)
+                setBackgroundTint(context.getColor(R.color.incoming_bubble))
+                setTextColor(context.getColor(R.color.incoming_bubble_text))
+                highlightColor = context.getColor(R.color.incoming_bubble_text).withAlpha(0x40)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    textSelectHandle?.setTint(R.attr.bubbleColor.withAlpha(0x7d))
-                    textSelectHandleLeft?.setTint(R.attr.bubbleColor.withAlpha(0x7d))
-                    textSelectHandleRight?.setTint(R.attr.bubbleColor.withAlpha(0x7d))
+                    textSelectHandle?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
+                    textSelectHandleLeft?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
+                    textSelectHandleRight?.setTint(context.getColor(R.color.incoming_bubble_text).withAlpha(0xad))
                 }
             }
         }

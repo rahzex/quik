@@ -24,6 +24,6 @@
         android:topRightRadius="14dp"
         android:bottomRightRadius="3dp"
         android:bottomLeftRadius="14dp" />
-    <solid android:color="@android:color/white" />
+    <solid android:color="@color/incoming_bubble" />
     <padding android:bottom="8dp" android:left="12dp" android:right="12dp" android:top="8dp" />
 </shape>
