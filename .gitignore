@@ -59,3 +59,5 @@ keystore.p12
 config.yml
 *.jks
 
+# data and md files
+sms_backup_categorized.json
