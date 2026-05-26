@@ -2553,6 +2553,247 @@ body::before {
 
     <!-- SETTINGS SUB-PAGE PHONES END -->
 
+
+    <!-- DIALOG SCREEN -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;position:relative;display:flex;flex-direction:column;overflow:hidden;">
+
+          <!-- dimmed background screen content -->
+          <div style="background:var(--surface);padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+            <div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            </div>
+            <span style="font-size:16px;font-weight:500;color:var(--text);">Auto-delete OTPs</span>
+          </div>
+
+          <!-- background content (dimmed) -->
+          <div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:10px;filter:blur(1.5px);pointer-events:none;user-select:none;opacity:0.45;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;border-bottom:1px solid var(--border);">
+                <div style="width:30px;height:30px;border-radius:8px;background:var(--red-bg);display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--red-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">Enable auto-delete</div><div style="font-size:11px;color:var(--text-2);margin-top:1px;">Automatically remove expired OTPs</div></div>
+                <div class="toggle on"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:11px;padding:11px 13px;">
+                <div style="width:30px;height:30px;border-radius:8px;background:var(--surface3);display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">Delete OTPs older than</div><div style="font-size:11px;color:var(--text-2);margin-top:1px;">7 days</div></div>
+              </div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;">
+              <div style="font-size:10px;color:var(--text-3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;">Last cleaned</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text);">May 21, 2026</div>
+              <div style="font-size:11px;color:var(--text-2);margin-top:2px;">47 OTPs removed</div>
+            </div>
+          </div>
+
+          <!-- scrim overlay -->
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(1px);z-index:10;"></div>
+
+          <!-- dialog box -->
+          <div style="
+            position:absolute;
+            left:50%; top:50%;
+            transform:translate(-50%,-50%);
+            width:calc(100% - 48px);
+            background:var(--surface);
+            border-radius:18px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.25),0 4px 16px rgba(0,0,0,0.15);
+            z-index:20;
+            overflow:hidden;
+            border:1px solid var(--border-md);
+          ">
+
+            <!-- dialog icon -->
+            <div style="display:flex;justify-content:center;padding:22px 20px 0;">
+              <div style="width:48px;height:48px;border-radius:14px;background:var(--red-bg);display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--red-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                  <path d="M10 11v6"/><path d="M14 11v6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- dialog title + body -->
+            <div style="padding:14px 20px 4px;text-align:center;">
+              <div style="font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.02em;margin-bottom:8px;">Delete all OTPs now?</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;font-weight:300;">This will permanently remove <span style="color:var(--text);font-weight:500;">47 OTP messages</span> older than 7 days. This action cannot be undone.</div>
+            </div>
+
+            <!-- divider -->
+            <div style="height:1px;background:var(--border);margin:16px 0 0;"></div>
+
+            <!-- buttons -->
+            <div style="display:flex;">
+
+              <!-- negative -->
+              <div style="
+                flex:1;
+                padding:14px 0;
+                text-align:center;
+                font-size:14px;
+                font-weight:500;
+                color:var(--text-2);
+                cursor:pointer;
+                border-right:1px solid var(--border);
+                letter-spacing:-0.01em;
+              ">Cancel</div>
+
+              <!-- positive (destructive) -->
+              <div style="
+                flex:1;
+                padding:14px 0;
+                text-align:center;
+                font-size:14px;
+                font-weight:600;
+                color:var(--red-text);
+                cursor:pointer;
+                letter-spacing:-0.01em;
+              ">Delete</div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Dialog — Destructive</div>
+    </div>
+
+    <!-- DIALOG SCREEN 2: CONFIRMATION (positive action) -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;position:relative;display:flex;flex-direction:column;overflow:hidden;">
+
+          <!-- dimmed bg -->
+          <div style="background:var(--surface);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            <span style="font-size:16px;font-weight:500;color:var(--text);">Blocked Senders</span>
+          </div>
+          <div style="flex:1;padding:14px 16px;filter:blur(1.5px);pointer-events:none;user-select:none;opacity:0.45;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);">
+                <div style="width:34px;height:34px;border-radius:50%;background:var(--red-bg);color:var(--red-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;">+9</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">+91 99887 12345</div><div style="font-size:11px;color:var(--text-2);">Blocked · Spam</div></div>
+                <div style="font-size:10px;font-weight:500;color:var(--red-text);background:var(--red-bg);border:1px solid var(--border);padding:3px 9px;border-radius:6px;">Unblock</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;">
+                <div style="width:34px;height:34px;border-radius:50%;background:var(--red-bg);color:var(--red-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;">AD</div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">AD-UNKWN</div><div style="font-size:11px;color:var(--text-2);">Blocked · Promotional</div></div>
+                <div style="font-size:10px;font-weight:500;color:var(--red-text);background:var(--red-bg);border:1px solid var(--border);padding:3px 9px;border-radius:6px;">Unblock</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- scrim -->
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(1px);z-index:10;"></div>
+
+          <!-- dialog: confirmation (positive) -->
+          <div style="
+            position:absolute;
+            left:50%; top:50%;
+            transform:translate(-50%,-50%);
+            width:calc(100% - 48px);
+            background:var(--surface);
+            border-radius:18px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.25),0 4px 16px rgba(0,0,0,0.15);
+            z-index:20;
+            overflow:hidden;
+            border:1px solid var(--border-md);
+          ">
+            <div style="display:flex;justify-content:center;padding:22px 20px 0;">
+              <div style="width:48px;height:48px;border-radius:14px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--green-text);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8 12l2.5 2.5L16 9"/>
+                </svg>
+              </div>
+            </div>
+            <div style="padding:14px 20px 4px;text-align:center;">
+              <div style="font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.02em;margin-bottom:8px;">Unblock this sender?</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;font-weight:300;">Messages from <span style="color:var(--text);font-weight:500;">+91 99887 12345</span> will be delivered to your inbox again.</div>
+            </div>
+            <div style="height:1px;background:var(--border);margin:16px 0 0;"></div>
+            <div style="display:flex;">
+              <div style="flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border);">Cancel</div>
+              <div style="flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;color:var(--accent);cursor:pointer;">Unblock</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Dialog — Confirmation</div>
+    </div>
+
+    <!-- DIALOG SCREEN 3: INFO / NEUTRAL -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;position:relative;display:flex;flex-direction:column;overflow:hidden;">
+
+          <!-- bg -->
+          <div style="background:var(--surface);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-2);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;"><polyline points="15 18 9 12 15 6"/></svg>
+            <span style="font-size:16px;font-weight:500;color:var(--text);">Default SMS App</span>
+          </div>
+          <div style="flex:1;padding:14px 16px;filter:blur(1.5px);pointer-events:none;user-select:none;opacity:0.45;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:var(--accent-bg);border:1px solid var(--border-md);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;">
+              <div style="width:36px;height:36px;border-radius:11px;background:var(--accent);display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.75;stroke-linecap:round;"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              </div>
+              <div style="flex:1;"><div style="font-size:13px;font-weight:500;color:var(--text);">Pulse SMS</div><div style="font-size:11px;color:var(--text-2);">Not set as default</div></div>
+              <div style="font-size:11px;font-weight:600;color:var(--accent);border:1.5px solid var(--accent);padding:5px 12px;border-radius:8px;">Set default</div>
+            </div>
+          </div>
+
+          <!-- scrim -->
+          <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(1px);z-index:10;"></div>
+
+          <!-- dialog: info/neutral with two equal actions -->
+          <div style="
+            position:absolute;
+            left:50%; top:50%;
+            transform:translate(-50%,-50%);
+            width:calc(100% - 48px);
+            background:var(--surface);
+            border-radius:18px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.25),0 4px 16px rgba(0,0,0,0.15);
+            z-index:20;
+            overflow:hidden;
+            border:1px solid var(--border-md);
+          ">
+            <div style="display:flex;justify-content:center;padding:22px 20px 0;">
+              <div style="width:48px;height:48px;border-radius:14px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;">
+                <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:var(--accent);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+            </div>
+            <div style="padding:14px 20px 4px;text-align:center;">
+              <div style="font-size:16px;font-weight:600;color:var(--text);letter-spacing:-0.02em;margin-bottom:8px;">Set as default app?</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6;font-weight:300;">Pulse will handle all SMS and MMS on this device. You can change this anytime in system settings.</div>
+            </div>
+            <div style="height:1px;background:var(--border);margin:16px 0 0;"></div>
+            <div style="display:flex;">
+              <div style="flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;border-right:1px solid var(--border);">Not now</div>
+              <div style="flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;color:var(--accent);cursor:pointer;">Set default</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Dialog — Informational</div>
+    </div>
+
   </div><!-- /phones -->
 
   <!-- feature strip -->
