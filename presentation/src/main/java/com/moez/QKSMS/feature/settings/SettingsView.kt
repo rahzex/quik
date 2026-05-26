@@ -34,6 +34,7 @@ interface SettingsView : QkViewContract<SettingsState> {
     fun signatureChanged(): Observable<String>
     fun mmsSizeSelected(): Observable<Int>
     fun messageLinkHandlingSelected(): Observable<Int>
+    fun autoCategorizeChanged(): Observable<Boolean>
 
     fun showQksmsPlusSnackbar()
     fun showNightModeDialog()

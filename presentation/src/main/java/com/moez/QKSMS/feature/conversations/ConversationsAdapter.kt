@@ -35,9 +35,13 @@ import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.setTint
 import dev.octoshrimpy.quik.databinding.ConversationListItemBinding
 import dev.octoshrimpy.quik.model.Conversation
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
 import dev.octoshrimpy.quik.util.PhoneNumberUtils
+import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import javax.inject.Inject
 
 class ConversationsAdapter @Inject constructor(
@@ -49,6 +53,10 @@ class ConversationsAdapter @Inject constructor(
     private val phoneNumberUtils: PhoneNumberUtils
 ) : QkRealmAdapter<Conversation, QkBindingViewHolder<ConversationListItemBinding>>() {
     private val disposables = CompositeDisposable()
+
+    // Emits threadId when user long-presses and selects "Move to Category"
+    private val _moveToCategoryRequest: Subject<Long> = PublishSubject.create()
+    val moveToCategoryRequest: Observable<Long> = _moveToCategoryRequest
 
     init {
         // This is how we access the threadId for the swipe actions
@@ -86,6 +94,8 @@ class ConversationsAdapter @Inject constructor(
                 val conversation = getItem(adapterPosition) ?: return@setOnLongClickListener true
                 toggleSelection(conversation.id)
                 binding.root.isActivated = isSelected(conversation.id)
+                // Offer "Move to Category" on first long-press (selection mode just started)
+                _moveToCategoryRequest.onNext(conversation.id)
                 true
             }
         }
@@ -134,6 +144,33 @@ class ConversationsAdapter @Inject constructor(
 
         binding.pinned.isVisible = conversation.pinned
         binding.unread.setTint(theme)
+
+        // Category badge (matches HTML .msg-tag — between name row and preview)
+        val category = conversation.category
+        if (category != MessageCategory.ALL && category != MessageCategory.PERSONAL) {
+            binding.categoryBadge.isVisible = true
+            // Contextual label matching HTML mockup style
+            binding.categoryBadge.text = when (category) {
+                MessageCategory.TRANSACTIONS -> "Transaction"
+                MessageCategory.OTP          -> "OTP"
+                MessageCategory.UPDATES      -> "Update"
+                MessageCategory.PROMOS       -> "Promo"
+                MessageCategory.SPAM         -> "Spam"
+                else                         -> category.name.lowercase().replaceFirstChar { it.uppercase() }
+            }
+            val (bgColor, textColor) = when (category) {
+                MessageCategory.TRANSACTIONS -> Pair(0xFFF0FAF4.toInt(), 0xFF1A7F4B.toInt())
+                MessageCategory.OTP          -> Pair(0xFFF3E5F5.toInt(), 0xFF7B1FA2.toInt())
+                MessageCategory.UPDATES      -> Pair(0xFFE8F0FE.toInt(), 0xFF1A56DB.toInt())
+                MessageCategory.PROMOS       -> Pair(0xFFFFFBEB.toInt(), 0xFFB45309.toInt())
+                MessageCategory.SPAM         -> Pair(0xFFFFF0F0.toInt(), 0xFFC0392B.toInt())
+                else                         -> Pair(0xFFEEEEEE.toInt(), 0xFF424242.toInt())
+            }
+            binding.categoryBadge.setBackgroundColor(bgColor)
+            binding.categoryBadge.setTextColor(textColor)
+        } else {
+            binding.categoryBadge.isVisible = false
+        }
     }
 
     override fun getItemId(position: Int): Long {

@@ -415,6 +415,28 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
         binding.toolbarSubtitle.text = getString(R.string.compose_subtitle_results, state.searchSelectionPosition,
             state.searchResults)
 
+        // Category badge in thread header
+        val conversation = state.messages?.first
+        val category = conversation?.category
+        if (category != null &&
+            category != dev.octoshrimpy.quik.model.MessageCategory.ALL &&
+            category != dev.octoshrimpy.quik.model.MessageCategory.PERSONAL) {
+            binding.categoryBadge.visibility = android.view.View.VISIBLE
+            binding.categoryBadge.text = category.name.lowercase().replaceFirstChar { it.uppercase() }
+            val (bgColor, textColor) = when (category) {
+                dev.octoshrimpy.quik.model.MessageCategory.TRANSACTIONS -> Pair(0xFFF0FAF4.toInt(), 0xFF1A7F4B.toInt())
+                dev.octoshrimpy.quik.model.MessageCategory.OTP          -> Pair(0xFFF3E5F5.toInt(), 0xFF7B1FA2.toInt())
+                dev.octoshrimpy.quik.model.MessageCategory.UPDATES      -> Pair(0xFFE8F0FE.toInt(), 0xFF1A56DB.toInt())
+                dev.octoshrimpy.quik.model.MessageCategory.PROMOS       -> Pair(0xFFFFFBEB.toInt(), 0xFFB45309.toInt())
+                dev.octoshrimpy.quik.model.MessageCategory.SPAM         -> Pair(0xFFFFF0F0.toInt(), 0xFFC0392B.toInt())
+                else                                                     -> Pair(0xFFEEEEEE.toInt(), 0xFF424242.toInt())
+            }
+            binding.categoryBadge.setBackgroundColor(bgColor)
+            binding.categoryBadge.setTextColor(textColor)
+        } else {
+            binding.categoryBadge.visibility = android.view.View.GONE
+        }
+
         binding.toolbarTitle.setVisible(!state.editingMode)
         binding.chips.setVisible(state.editingMode)
         binding.composeBar.setVisible(!state.loading)

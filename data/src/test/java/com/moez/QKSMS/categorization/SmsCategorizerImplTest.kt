@@ -358,5 +358,23 @@ class SmsCategorizerImplTest {
         // "updated" isn't a keyword in our rules → should default to PERSONAL
         assertEquals(MessageCategory.PERSONAL, result)
     }
+
+    @Test
+    fun `Blue Dart Secure Delivery Code - digits before phrase`() {
+        val result = categorizer.categorize(
+            address = "VM-BLUDRТ",
+            body    = "371310 is your Blue Dart Secure Delivery Code valid for the next 30 minutes. Do not share with anyone."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `Delivery code digits after phrase`() {
+        val result = categorizer.categorize(
+            address = "DELIVERY",
+            body    = "Your Secure Delivery Code is 482910. Use this to receive your parcel."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
 }
 

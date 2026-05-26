@@ -394,6 +394,23 @@
                 app:textSize="secondary"
                 tools:text="3 of 9 results" />
 
+            <TextView
+                android:id="@+id/categoryBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="10sp"
+                android:visibility="gone"
+                android:background="@drawable/rounded_rectangle_4dp"
+                tools:text="Transaction"
+                tools:visibility="visible"
+                tools:backgroundTint="#E6F4EA"
+                tools:textColor="#155731" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/chips"
                 android:layout_width="match_parent"

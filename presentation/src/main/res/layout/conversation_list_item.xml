@@ -33,25 +33,25 @@
 
     <dev.octoshrimpy.quik.common.widget.GroupAvatarView
         android:id="@+id/avatars"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
         android:layout_gravity="top"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0" />
 
+    <!-- sender name row -->
     <dev.octoshrimpy.quik.common.widget.QkTextView
         android:id="@+id/title"
         style="@style/TextPrimary"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="10dp"
         android:ellipsize="end"
         android:lines="1"
         app:layout_constrainedWidth="true"
-        app:layout_constraintBottom_toTopOf="@id/snippet"
+        app:layout_constraintBottom_toTopOf="@id/categoryBadge"
         app:layout_constraintEnd_toStartOf="@id/date"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toEndOf="@id/avatars"
@@ -60,18 +60,42 @@
         tools:text="@tools:sample/full_names"
         android:textDirection="ltr" />
 
+    <!-- category badge — between title and snippet (matches HTML .msg-tag) -->
+    <TextView
+        android:id="@+id/categoryBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="1.5dp"
+        android:paddingBottom="1.5dp"
+        android:textSize="9sp"
+        android:fontFamily="monospace"
+        android:letterSpacing="0.02"
+        android:visibility="gone"
+        android:background="@drawable/rounded_rectangle_4dp"
+        app:layout_constraintBottom_toTopOf="@id/snippet"
+        app:layout_constraintStart_toStartOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/title"
+        tools:text="₹4,200 debited"
+        tools:visibility="visible"
+        tools:backgroundTint="#F0FAF4"
+        tools:textColor="#1A7F4B" />
+
+    <!-- message preview -->
     <dev.octoshrimpy.quik.common.widget.QkTextView
         android:id="@+id/snippet"
         style="@style/TextSecondary"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="1dp"
         android:ellipsize="end"
         android:maxLines="1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/scheduled"
         app:layout_constraintStart_toStartOf="@id/title"
-        app:layout_constraintTop_toBottomOf="@id/title"
+        app:layout_constraintTop_toBottomOf="@id/categoryBadge"
         tools:text="@tools:sample/lorem/random" />
 
     <ImageView
@@ -103,15 +127,13 @@
 
     <ImageView
         android:id="@+id/unread"
-        android:layout_width="20dp"
-        android:layout_height="16sp"
-        android:paddingStart="8dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
+        android:layout_width="7dp"
+        android:layout_height="7dp"
         android:src="@drawable/circle"
         android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/title"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/snippet"
+        app:layout_constraintTop_toTopOf="@id/title"
         tools:tint="@color/tools_theme"
         tools:visibility="visible" />
 
@@ -121,9 +143,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
+        android:textSize="10sp"
         app:layout_constraintBottom_toBottomOf="@id/title"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/unread"
+        app:layout_constraintTop_toTopOf="@id/title"
         app:layout_constraintHorizontal_bias="100"
-        tools:text="Oct 11" />
+        tools:text="9:41" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

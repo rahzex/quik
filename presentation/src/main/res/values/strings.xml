@@ -46,6 +46,10 @@
 
     <string name="main_drawer_open_cd">Open navigation drawer</string>
     <string name="main_title_selected">%d selected</string>
+    <string name="main_nav_finance">Finance</string>
+    <string name="main_finance_placeholder">Finance dashboard — Coming in Phase 2</string>
+    <string name="main_title_messages">Messages</string>
+    <string name="main_search_hint">Search messages…</string>
     <string name="main_menu_clear">Clear</string>
     <string name="main_menu_select_all">Select all</string>
     <string name="main_menu_archive">Archive</string>
@@ -260,6 +264,20 @@
     <string name="attachment_missing">Missing</string>
 
     <string name="settings_category_appearance">Appearance</string>
+    <string name="settings_category_categorisation">Categorisation</string>
+    <string name="settings_auto_categorize_title">Auto-categorise</string>
+    <string name="settings_auto_categorize_summary">Sort SMS by type automatically</string>
+    <string name="settings_category_messaging">Messaging</string>
+    <string name="settings_category_otp">OTP</string>
+    <string name="settings_category_finance">Finance</string>
+    <string name="settings_category_privacy">Privacy &amp; Security</string>
+    <string name="settings_category_backup">Backup</string>
+    <string name="settings_blocking_title">Blocked senders</string>
+    <string name="settings_blocking_summary">Manage blocked numbers and spam</string>
+    <string name="settings_swipe_actions_title">Swipe actions</string>
+    <string name="settings_mobile_only_title">Mobile numbers only</string>
+    <string name="settings_mobile_only_summary">When composing, only show mobile numbers</string>
+    <string name="settings_notifications_summary">Configure per-conversation notifications</string>
     <string name="settings_category_general">General</string>
     <string name="settings_category_qkreply">QK Reply</string>
 
@@ -332,8 +350,7 @@
     <string name="settings_long_as_mms_summary">If your longer text messages are failing to send, or sending in the wrong order, you can send them as MMS messages instead. Additional charges may apply</string>
     <string name="settings_mms_size_title">Auto-compress MMS image attachments</string>
     <string name="settings_mms_weblink_title">Link handling in messages</string>
-    <string name="settings_disable_screenshots_title">Disable Screenshots</string>
-    <string name="settings_diable_screenshots_summary">Prevent your OS and other apps from taking screenshots of the app.</string>
+    <string name="settings_disable_screenshots_title">Disable Screenshots</string>    <string name="settings_diable_screenshots_summary">Prevent your OS and other apps from taking screenshots of the app.</string>
     <string name="settings_sync_title">Sync messages</string>
     <string name="settings_sync_summary">Re-sync your messages with the native Android SMS database</string>
     <string name="settings_about_title">About QUIK</string>
