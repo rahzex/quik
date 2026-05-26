@@ -30,10 +30,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:padding="6dp"
         android:textAllCaps="true"
-        app:autoSizeMaxTextSize="22sp"
-        app:autoSizeTextType="uniform" />
+        android:fontFamily="monospace"
+        android:textStyle="bold"
+        android:textSize="14sp" />
 
     <ImageView
         android:id="@+id/icon"

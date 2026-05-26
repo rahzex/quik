@@ -118,6 +118,7 @@ class ConversationsAdapter @Inject constructor(
         holder.itemView.isActivated = isSelected(conversation.id)
 
         binding.avatars.recipients = conversation.recipients
+        binding.avatars.setCategory(conversation.category)
         binding.title.collapseEnabled = conversation.recipients.size > 1
         binding.title.text = buildSpannedString {
             append(conversation.getTitle())

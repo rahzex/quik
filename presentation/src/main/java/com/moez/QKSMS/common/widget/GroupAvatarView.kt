@@ -28,6 +28,7 @@ import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.setBackgroundTint
 import dev.octoshrimpy.quik.databinding.GroupAvatarViewBinding
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.Recipient
 
 class GroupAvatarView @JvmOverloads constructor(
@@ -64,6 +65,20 @@ class GroupAvatarView @JvmOverloads constructor(
 
         recipients.getOrNull(0).run(layout.avatar1::setRecipient)
         recipients.getOrNull(1).run(layout.avatar2::setRecipient)
+    }
+
+    fun setCategory(category: MessageCategory) {
+        val (bg, fg) = when (category) {
+            MessageCategory.PERSONAL     -> 0xFFE8F0FE.toInt() to 0xFF1A56DB.toInt()
+            MessageCategory.TRANSACTIONS -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
+            MessageCategory.OTP          -> 0xFFF3E5F5.toInt() to 0xFF7B1FA2.toInt()
+            MessageCategory.UPDATES      -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
+            MessageCategory.PROMOS       -> 0xFFFFFBEB.toInt() to 0xFFB45309.toInt()
+            MessageCategory.SPAM         -> 0xFFFFF0F0.toInt() to 0xFFC0392B.toInt()
+            else                         -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
+        }
+        layout.avatar1.applyCategoryStyle(bg, fg)
+        layout.avatar2.applyCategoryStyle(bg, fg)
     }
 
 }
