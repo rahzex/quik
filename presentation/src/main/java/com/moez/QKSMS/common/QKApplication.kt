@@ -43,10 +43,12 @@ import dev.octoshrimpy.quik.manager.BillingManager
 import dev.octoshrimpy.quik.manager.ReferralManager
 import dev.octoshrimpy.quik.migration.QkMigration
 import dev.octoshrimpy.quik.migration.QkRealmMigration
+import dev.octoshrimpy.quik.repository.SyncRepository
 import dev.octoshrimpy.quik.util.NightModeManager
 import dev.octoshrimpy.quik.util.Preferences
 import dev.octoshrimpy.quik.worker.CategorizeAllMessagesWorker
 import dev.octoshrimpy.quik.worker.HousekeepingWorker
+import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +75,9 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
     @Inject lateinit var referralManager: ReferralManager
     @Inject lateinit var workerFactory: WorkerFactory
     @Inject lateinit var prefs: Preferences
+    @Inject lateinit var syncRepository: SyncRepository
+
+    private val appDisposables = CompositeDisposable()
 
     override fun onCreate() {
         super.onCreate()
@@ -142,9 +147,18 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
         // is skipped on all subsequent launches.
         //
         // WorkManager MUST be initialized (line above) before we can enqueue work.
-        if (!prefs.categorizedV1Done.get()) {
+        if (!prefs.categorizedV3Done.get()) {
             CategorizeAllMessagesWorker.enqueue(applicationContext)
         }
+
+        // Re-categorize after every sync completes (handles the race condition where
+        // the worker ran before messages were synced for the first time).
+        appDisposables.add(
+            syncRepository.syncProgress
+                .filter { it is SyncRepository.SyncProgress.Idle }
+                .skip(1) // skip the initial Idle emission at startup
+                .subscribe { CategorizeAllMessagesWorker.enqueue(applicationContext) }
+        )
     }
 
     override fun activityInjector(): AndroidInjector<Activity> {

@@ -252,4 +252,16 @@ class Preferences @Inject constructor(
      * This prevents the batch worker from running on every app launch.
      */
     val categorizedV1Done: Preference<Boolean> = rxPrefs.getBoolean("categorized_v1_done", false)
+
+    /**
+     * V2 flag: bumped when the worker logic changed (Phase 1 race-condition fix).
+     * Setting this to a new key forces all existing users to re-categorize once.
+     */
+    val categorizedV2Done: Preference<Boolean> = rxPrefs.getBoolean("categorized_v2_done", false)
+
+    /**
+     * V3 flag: re-categorize all conversations with corrected PERSONAL/ALL logic.
+     * PERSONAL = phone numbers only. Alphanumeric senders default to ALL.
+     */
+    val categorizedV3Done: Preference<Boolean> = rxPrefs.getBoolean("categorized_v3_done", false)
 }

@@ -116,11 +116,19 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
         showBackButton(true)
     }
 
-    override fun preferenceClicks(): Observable<PreferenceView> = (0 until binding.preferences.childCount)
-            .map { index -> binding.preferences.getChildAt(index) }
-            .mapNotNull { view -> view as? PreferenceView }
+    override fun preferenceClicks(): Observable<PreferenceView> = collectPreferenceViews(binding.preferences)
             .map { preference -> preference.clicks().map { preference } }
             .let { preferences -> Observable.merge(preferences) }
+
+    /** Collects all [PreferenceView]s in [group] and any nested [ViewGroup]s. */
+    private fun collectPreferenceViews(group: ViewGroup): List<PreferenceView> =
+        (0 until group.childCount).flatMap { i ->
+            when (val child = group.getChildAt(i)) {
+                is PreferenceView -> listOf(child)
+                is ViewGroup -> collectPreferenceViews(child)
+                else -> emptyList()
+            }
+        }
 
     override fun aboutLongClicks(): Observable<*> = binding.about.longClicks()
 
@@ -141,6 +149,11 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
     override fun mmsSizeSelected(): Observable<Int> = mmsSizeDialog.adapter.menuItemClicks
 
     override fun messageLinkHandlingSelected(): Observable<Int> = messageLinkHandlingDialog.adapter.menuItemClicks
+
+    override fun autoCategorizeChanged(): Observable<Boolean> =
+        preferenceClicks()
+            .filter { it.id == R.id.autoCategorize }
+            .map { binding.autoCategorize.checkbox?.isChecked != true }
 
     override fun render(state: SettingsState) {
         binding.theme.findViewById<View>(R.id.themePreview)?.setBackgroundTint(state.theme)
@@ -187,6 +200,8 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
         messageLinkHandlingDialog.adapter.selectedItem = state.messageLinkHandlingId
 
         binding.disableScreenshots.checkbox?.isChecked = state.disableScreenshotsEnabled
+
+        binding.autoCategorize.checkbox?.isChecked = state.autoCategorizeEnabled
 
         when (state.syncProgress) {
             is SyncRepository.SyncProgress.Idle -> binding.syncingProgress.isVisible = false

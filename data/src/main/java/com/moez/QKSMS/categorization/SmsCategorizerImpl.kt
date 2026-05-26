@@ -98,7 +98,7 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
          * These don't say "OTP" explicitly but are delivery PINs — functionally OTPs.
          */
         private val OTP_DELIVERY_CODE = Regex(
-            """\b(?:(?:secure\s+)?delivery\s+code\b.{0,40}\b\d{4,8}\b|OTP\s+\d{4,8}\s+(?:for|will\s+be)\s+(?:your\s+)?(?:shipment|delivery|parcel))\b""",
+            """\b(?:(?:secure\s+)?delivery\s+(?:code|pin|otp)\b.{0,60}\b\d{4,8}\b|\b\d{4,8}\b.{0,60}(?:secure\s+)?delivery\s+(?:code|pin|otp)\b|OTP\s+\d{4,8}\s+(?:for|will\s+be)\s+(?:your\s+)?(?:shipment|delivery|parcel))\b""",
             RegexOption.IGNORE_CASE
         )
 
@@ -267,6 +267,15 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
             """get\s+rich|earn\s+from\s+home|make\s+money|work\s+from\s+home\s+earn)\b""",
             RegexOption.IGNORE_CASE
         )
+
+        /**
+         * Matches addresses that look like a real phone number:
+         *  - International E.164:  +919876543210
+         *  - Local numeric:        9876543210
+         *  - Formatted:            +1 (555) 123-4567
+         * Alphanumeric sender IDs (e.g. VM-HDFCBK, AD-SWIGGY) will NOT match this.
+         */
+        private val PHONE_NUMBER = Regex("""^\+?[\d\s\-().]{7,20}$""")
     }
 
     override fun categorize(address: String, body: String): MessageCategory {
@@ -326,8 +335,15 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
         // ── 6. Spam ────────────────────────────────────────────────────────
         if (SPAM_BODY_KEYWORDS.containsMatchIn(bodyTrimmed)) return MessageCategory.SPAM
 
-        // ── 7. Personal (default) ──────────────────────────────────────────
-        return MessageCategory.PERSONAL
+        // ── 7. Personal — only real phone numbers ─────────────────────────
+        // Alphanumeric sender IDs that reached here didn't match any known pattern.
+        // Keep them in ALL (visible only in the All tab) rather than mis-labelling
+        // them as personal conversations.
+        if (PHONE_NUMBER.matches(addr)) return MessageCategory.PERSONAL
+
+        // ── 8. Default: ALL ───────────────────────────────────────────────
+        // Unknown alphanumeric sender — show in All tab only.
+        return MessageCategory.ALL
     }
 }
 

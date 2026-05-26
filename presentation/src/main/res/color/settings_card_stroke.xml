@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resolved at build time via resource qualifiers (see values/colors.xml + values-night/colors.xml).
+     This file is intentionally a simple selector-free redirect so it works on all API levels. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/separatorLight" />
+</selector>
+
+

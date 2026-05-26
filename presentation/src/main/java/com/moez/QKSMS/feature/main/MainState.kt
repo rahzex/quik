@@ -19,6 +19,7 @@
 package dev.octoshrimpy.quik.feature.main
 
 import dev.octoshrimpy.quik.model.Conversation
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.SearchResult
 import dev.octoshrimpy.quik.repository.SyncRepository
 import io.realm.RealmResults
@@ -26,7 +27,6 @@ import io.realm.RealmResults
 data class MainState(
     val hasError: Boolean = false,
     val page: MainPage = Inbox(),
-    val drawerOpen: Boolean = false,
     val upgraded: Boolean = true,
     val showRating: Boolean = false,
     val syncing: SyncRepository.SyncProgress = SyncRepository.SyncProgress.Idle,
@@ -39,6 +39,7 @@ data class MainState(
 sealed class MainPage
 
 data class Inbox(
+    val activeCategory: MessageCategory = MessageCategory.ALL,
     val addContact: Boolean = false,
     val markPinned: Boolean = true,
     val markRead: Boolean = false,
@@ -51,6 +52,10 @@ data class Searching(
     val data: List<SearchResult>? = null
 ) : MainPage()
 
+// Finance placeholder — full dashboard in Phase 2
+object Finance : MainPage()
+
+// Archived — still accessible via overflow menu
 data class Archived(
     val addContact: Boolean = false,
     val markPinned: Boolean = true,

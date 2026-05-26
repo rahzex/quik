@@ -42,7 +42,9 @@ import dev.octoshrimpy.quik.manager.BillingManager
 import dev.octoshrimpy.quik.manager.ChangelogManager
 import dev.octoshrimpy.quik.manager.PermissionManager
 import dev.octoshrimpy.quik.manager.RatingManager
+import dev.octoshrimpy.quik.model.Conversation
 import dev.octoshrimpy.quik.model.EmojiSyncNeeded
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.model.SyncLog
 import dev.octoshrimpy.quik.repository.ConversationRepository
 import dev.octoshrimpy.quik.repository.EmojiReactionRepository
@@ -160,13 +162,17 @@ class MainViewModel @Inject constructor(
             .debounce(400, TimeUnit.MILLISECONDS)
             .observeOn(AndroidSchedulers.mainThread())
             .withLatestFrom(state) { _, state ->
-                if (state.page is Inbox)
+                if (state.page is Inbox) {
+                    val cat = state.page.activeCategory
                     newState {
-                        copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get())))
+                        copy(page = Inbox(
+                            activeCategory = cat,
+                            data = conversationRepo.getConversationsByCategory(cat, prefs.unreadAtTop.get())
+                        ))
                     }
-                else if (state.page is Archived)
+                } else if (state.page is Archived)
                     newState {
-                        copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get(), true)))
+                        copy(page = Archived(data = conversationRepo.getConversations(prefs.unreadAtTop.get(), true)))
                     }
             }
             .autoDisposable(view.scope())
@@ -252,6 +258,45 @@ class MainViewModel @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe { navigator.showChangelog() }
 
+        // Category tab selection
+        view.categoryTabSelectedIntent
+            .withLatestFrom(state) { category, state -> Pair(category, state) }
+            .autoDisposable(view.scope())
+            .subscribe { (category, currentState) ->
+                val page = currentState.page
+                if (page is Inbox) {
+                    val data = conversationRepo.getConversationsByCategory(category, prefs.unreadAtTop.get())
+                    newState { copy(page = page.copy(activeCategory = category, data = data)) }
+                }
+            }
+
+        // Bottom nav selection
+        view.bottomNavSelectedIntent
+            .autoDisposable(view.scope())
+            .subscribe { itemId ->
+                when (itemId) {
+                    R.id.nav_messages -> {
+                        val data = conversationRepo.getConversationsByCategory(MessageCategory.ALL, prefs.unreadAtTop.get())
+                        newState { copy(page = Inbox(activeCategory = MessageCategory.ALL, data = data)) }
+                    }
+                    R.id.nav_finance  -> newState { copy(page = Finance) }
+                    R.id.nav_settings -> navigator.showSettings()
+                }
+            }
+
+        // Move conversation to a different category
+        view.moveToCategoryIntent
+            .observeOn(Schedulers.io())
+            .autoDisposable(view.scope())
+            .subscribe { (threadId, newCategory) ->
+                Realm.getDefaultInstance().use { realm ->
+                    realm.executeTransaction {
+                        it.where(Conversation::class.java).equalTo("id", threadId).findFirst()
+                            ?.categoryId = newCategory.name
+                    }
+                }
+            }
+
         view.queryChangedIntent
                 .debounce(200, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -292,65 +337,6 @@ class MainViewModel @Inject constructor(
         view.composeIntent
                 .autoDisposable(view.scope())
                 .subscribe { navigator.showCompose() }
-
-        view.homeIntent
-                .withLatestFrom(state) { _, state ->
-                    when {
-                        state.page is Searching -> view.clearSearch()
-                        state.page is Inbox && state.page.selected > 0 -> view.clearSelection()
-                        state.page is Archived && state.page.selected > 0 -> view.clearSelection()
-
-                        else -> newState { copy(drawerOpen = true) }
-                    }
-                }
-                .autoDisposable(view.scope())
-                .subscribe()
-
-        view.drawerToggledIntent
-            .doOnNext {
-                newState { copy(drawerOpen = it) }
-                view.drawerToggled(it)
-            }
-            .autoDisposable(view.scope())
-            .subscribe { open -> newState { copy(drawerOpen = open) } }
-
-        view.navigationIntent
-                .withLatestFrom(state) { drawerItem, state ->
-                    newState { copy(drawerOpen = false) }
-                    when (drawerItem) {
-                        NavItem.BACK -> when {
-                            state.drawerOpen -> Unit
-                            state.page is Searching -> view.clearSearch()
-                            state.page is Inbox && state.page.selected > 0 -> view.clearSelection()
-                            state.page is Archived && state.page.selected > 0 -> view.clearSelection()
-                            state.page !is Inbox -> {
-                                newState { copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get()))) }
-                            }
-                            else -> newState { copy(hasError = true) }
-                        }
-                        NavItem.BACKUP -> navigator.showBackup()
-                        NavItem.SCHEDULED -> navigator.showScheduled(null)
-                        NavItem.BLOCKING -> navigator.showBlockedConversations()
-                        NavItem.MESSAGE_UTILS -> navigator.showMessageUtils()
-                        NavItem.SETTINGS -> navigator.showSettings()
-                        NavItem.ABOUT -> navigator.showAbout()
-//                        NavItem.PLUS -> navigator.showQksmsPlusActivity("main_menu")
-//                        NavItem.HELP -> navigator.showSupport()
-                        NavItem.INVITE -> navigator.showInvite()
-                        else -> Unit
-                    }
-                    drawerItem
-                }
-                .distinctUntilChanged()
-                .doOnNext { drawerItem ->
-                    when (drawerItem) {
-                        NavItem.INBOX -> newState { copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get()))) }
-                        NavItem.ARCHIVED -> newState { copy(page = Archived(data = conversationRepo.getConversations(prefs.unreadAtTop.get(), true))) }
-                        else -> Unit
-                    }
-                }
-                .autoDisposable(view.scope())
-                .subscribe()
 
         view.optionsItemIntent
             .filter { itemId -> itemId == R.id.select_all }
@@ -454,13 +440,6 @@ class MainViewModel @Inject constructor(
             .autoDisposable(view.scope())
             .subscribe { conversation -> view.showRenameDialog(conversation.name) }
 
-//        view.plusBannerIntent
-//                .autoDisposable(view.scope())
-//                .subscribe {
-//                    newState { copy(drawerOpen = false) }
-//                    navigator.showQksmsPlusActivity("main_banner")
-//                }
-
         view.rateIntent
                 .autoDisposable(view.scope())
                 .subscribe {
@@ -493,12 +472,10 @@ class MainViewModel @Inject constructor(
                             val page = state.page.copy(addContact = add, markPinned = pin, markRead = read, selected = selected)
                             newState { copy(page = page) }
                         }
-
                         is Archived -> {
                             val page = state.page.copy(addContact = add, markPinned = pin, markRead = read, selected = selected)
                             newState { copy(page = page) }
                         }
-
                         is Searching -> {} // Ignore
                         else -> {}
                     }
@@ -506,7 +483,6 @@ class MainViewModel @Inject constructor(
                 .autoDisposable(view.scope())
                 .subscribe()
 
-        // Delete the conversation
         view.confirmDeleteIntent
                 .autoDisposable(view.scope())
                 .subscribe { conversations ->

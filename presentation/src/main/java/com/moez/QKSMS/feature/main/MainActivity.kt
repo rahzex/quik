@@ -24,16 +24,15 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
-import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewStub
-import androidx.appcompat.app.ActionBarDrawerToggle
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
-import androidx.core.view.GravityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
@@ -46,7 +45,6 @@ import com.uber.autodispose.autoDisposable
 import dagger.android.AndroidInjection
 import dev.octoshrimpy.quik.R
 import dev.octoshrimpy.quik.common.Navigator
-import dev.octoshrimpy.quik.common.androidxcompat.drawerOpen
 import dev.octoshrimpy.quik.common.base.QkThemedActivity
 import dev.octoshrimpy.quik.common.util.extensions.autoScrollToStart
 import dev.octoshrimpy.quik.common.util.extensions.dismissKeyboard
@@ -64,6 +62,7 @@ import dev.octoshrimpy.quik.feature.changelog.ChangelogDialog
 import dev.octoshrimpy.quik.feature.conversations.ConversationItemTouchCallback
 import dev.octoshrimpy.quik.feature.conversations.ConversationsAdapter
 import dev.octoshrimpy.quik.manager.ChangelogManager
+import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.SyncRepository
 import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
@@ -77,7 +76,6 @@ class MainActivity : QkThemedActivity(), MainView {
     @Inject lateinit var disposables: CompositeDisposable
     @Inject lateinit var navigator: Navigator
     @Inject lateinit var conversationsAdapter: ConversationsAdapter
-    @Inject lateinit var drawerBadgesExperiment: DrawerBadgesExperiment
     @Inject lateinit var searchAdapter: SearchAdapter
     @Inject lateinit var itemTouchCallback: ConversationItemTouchCallback
     @Inject lateinit var viewModelFactory: ViewModelProvider.Factory
@@ -90,29 +88,9 @@ class MainActivity : QkThemedActivity(), MainView {
     override val activityResumedIntent: Subject<Boolean> = PublishSubject.create()
     override val queryChangedIntent by lazy { binding.toolbarSearch.textChanges() }
     override val composeIntent by lazy { binding.compose.clicks() }
-    override val drawerToggledIntent: Observable<Boolean> by lazy {
-        binding.drawerLayout.drawerOpen(Gravity.START)
-    }
-    override val homeIntent: Subject<Unit> = PublishSubject.create()
-    override val navigationIntent: Observable<NavItem> by lazy {
-        Observable.merge(listOf(
-                backPressedSubject,
-                binding.drawer.inbox.clicks().map { NavItem.INBOX },
-                binding.drawer.archived.clicks().map { NavItem.ARCHIVED },
-                binding.drawer.backup.clicks().map { NavItem.BACKUP },
-                binding.drawer.scheduled.clicks().map { NavItem.SCHEDULED },
-                binding.drawer.blocking.clicks().map { NavItem.BLOCKING },
-                binding.drawer.messageUtils.clicks().map { NavItem.MESSAGE_UTILS },
-                binding.drawer.settings.clicks().map { NavItem.SETTINGS },
-                binding.drawer.about.clicks().map { NavItem.ABOUT },
-//                plus.clicks().map { NavItem.PLUS },
-//                help.clicks().map { NavItem.HELP },
-                binding.drawer.invite.clicks().map { NavItem.INVITE }))
-    }
     override val optionsItemIntent: Subject<Int> = PublishSubject.create()
-//    override val plusBannerIntent by lazy { plusBanner.clicks() }
-    override val dismissRatingIntent by lazy { binding.drawer.rateDismiss.clicks() }
-    override val rateIntent by lazy { binding.drawer.rateOkay.clicks() }
+    override val dismissRatingIntent: Subject<Unit> = PublishSubject.create()
+    override val rateIntent: Subject<Unit> = PublishSubject.create()
     override val conversationsSelectedIntent by lazy { conversationsAdapter.selectionChanges }
     override val confirmDeleteIntent: Subject<List<Long>> = PublishSubject.create()
     override val renameConversationIntent: Subject<String> = PublishSubject.create()
@@ -121,24 +99,30 @@ class MainActivity : QkThemedActivity(), MainView {
     override val undoArchiveIntent: Subject<Unit> = PublishSubject.create()
     override val snackbarButtonIntent: Subject<Unit> = PublishSubject.create()
 
+    // Category tab subject
+    private val categoryTabSubject: Subject<MessageCategory> = PublishSubject.create()
+    override val categoryTabSelectedIntent: Observable<MessageCategory> by lazy { categoryTabSubject }
+
+    // Bottom nav subject
+    private val bottomNavSubject: Subject<Int> = PublishSubject.create()
+    override val bottomNavSelectedIntent: Observable<Int> by lazy { bottomNavSubject }
+
+    // Move to category subject
+    private val moveToCategorySubject: Subject<Pair<Long, MessageCategory>> = PublishSubject.create()
+    override val moveToCategoryIntent: Observable<Pair<Long, MessageCategory>> by lazy { moveToCategorySubject }
+
     private val viewModel by lazy {
         ViewModelProviders.of(this, viewModelFactory)[MainViewModel::class.java]
-    }
-    private val toggle by lazy {
-        ActionBarDrawerToggle(
-            this,
-            binding.drawerLayout,
-            binding.toolbar,
-            R.string.main_drawer_open_cd,
-            0
-        )
     }
     private val itemTouchHelper by lazy { ItemTouchHelper(itemTouchCallback) }
     private val progressAnimator by lazy {
         ObjectAnimator.ofInt(syncingBinding.syncingProgress, "progress", 0, 0)
     }
     private val changelogDialog by lazy { ChangelogDialog(this) }
-    private val backPressedSubject: Subject<NavItem> = PublishSubject.create()
+    private val backPressedSubject: Subject<Unit> = PublishSubject.create()
+
+    // Keep track of the active tab view for styling
+    private var activeTabView: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         AndroidInjection.inject(this)
@@ -159,49 +143,135 @@ class MainActivity : QkThemedActivity(), MainView {
             it.syncingProgress.indeterminateTintList = ColorStateList.valueOf(theme.blockingFirst().theme)
         }
 
-        toggle.syncState()
-        binding.toolbar.setNavigationOnClickListener {
-            dismissKeyboard()
-            homeIntent.onNext(Unit)
+        // Overflow icon opens context popup menu
+        binding.overflowIcon.setOnClickListener { view ->
+            val popup = androidx.appcompat.widget.PopupMenu(this, view)
+            menuInflater.inflate(R.menu.main, popup.menu)
+            // Hide selection-specific items (no selection active from overflow)
+            listOf(R.id.select_all, R.id.archive, R.id.unarchive, R.id.delete,
+                R.id.add, R.id.pin, R.id.unpin, R.id.read, R.id.unread,
+                R.id.block, R.id.rename).forEach { id ->
+                popup.menu.findItem(id)?.isVisible = false
+            }
+            popup.setOnMenuItemClickListener { item ->
+                optionsItemIntent.onNext(item.itemId)
+                true
+            }
+            popup.show()
         }
 
         itemTouchCallback.adapter = conversationsAdapter
         conversationsAdapter.autoScrollToStart(binding.recyclerView)
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Don't allow clicks to pass through the drawer layout
-        binding.drawer.root.clicks().autoDisposable(scope()).subscribe()
+        // Wire up bottom navigation
+        binding.bottomNav.setOnNavigationItemSelectedListener { item ->
+            bottomNavSubject.onNext(item.itemId)
+            true
+        }
 
-        // Set the theme color tint to the recyclerView, progressbar, and FAB
+        // Build category tabs programmatically
+        setupCategoryTabs()
+
+        // Theme tints
         theme
-                .autoDisposable(scope())
-                .subscribe { theme ->
-                    // Set the color for the drawer icons
-                    val states = arrayOf(
-                            intArrayOf(android.R.attr.state_activated),
-                            intArrayOf(-android.R.attr.state_activated))
+            .autoDisposable(scope())
+            .subscribe { theme ->
+                syncingBinding.syncingProgress.progressTintList = ColorStateList.valueOf(theme.theme)
+                syncingBinding.syncingProgress.indeterminateTintList = ColorStateList.valueOf(theme.theme)
+                binding.compose.setBackgroundTint(theme.theme)
+                binding.compose.setTint(theme.textPrimary)
+                // Update active tab underline color
+                activeTabView?.setTextColor(theme.theme)
+            }
 
-                    ColorStateList(states, intArrayOf(theme.theme,
-                        resolveThemeColor(android.R.attr.textColorSecondary)
-                    ))
-                        .let { tintList ->
-                            binding.drawer.inboxIcon.imageTintList = tintList
-                            binding.drawer.archivedIcon.imageTintList = tintList
-                        }
+        // Wire up move-to-category from adapter long-press
+        conversationsAdapter.moveToCategoryRequest
+            .autoDisposable(scope(Lifecycle.Event.ON_DESTROY))
+            .subscribe { threadId ->
+                showMoveToCategoryDialog(threadId)
+            }
+    }
 
-                    // Miscellaneous views
-                    listOf(binding.drawer.plusBadge1, binding.drawer.plusBadge2).forEach { badge ->
-                        badge.setBackgroundTint(theme.theme)
-                        badge.setTextColor(theme.textPrimary)
-                    }
-                    syncingBinding.syncingProgress.progressTintList = ColorStateList.valueOf(theme.theme)
-                    syncingBinding.syncingProgress.indeterminateTintList = ColorStateList.valueOf(theme.theme)
-                    binding.drawer.plusIcon.setTint(theme.theme)
-                    binding.drawer.rateIcon.setTint(theme.theme)
-                    binding.compose.setBackgroundTint(theme.theme)
+    private fun setupCategoryTabs() {
+        val categories = MessageCategory.values()
+        val accentColor = resolveThemeColor(android.R.attr.colorAccent)
+        val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
+        val displayNames = mapOf(
+            MessageCategory.ALL          to "All",
+            MessageCategory.PERSONAL     to "Personal",
+            MessageCategory.TRANSACTIONS to "Txn",
+            MessageCategory.OTP          to "OTP",
+            MessageCategory.UPDATES      to "Updates",
+            MessageCategory.PROMOS       to "Promos",
+            MessageCategory.SPAM         to "Spam"
+        )
 
-                    // Set the FAB compose icon color
-                    binding.compose.setTint(theme.textPrimary)
+        categories.forEach { category ->
+            val label = displayNames[category] ?: category.name
+            val tab = TextView(this).apply {
+                text = label
+                setPadding(28, 0, 28, 0)
+                setTextColor(defaultColor)
+                textSize = 12f
+                isAllCaps = false
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT
+                )
+                gravity = android.view.Gravity.CENTER
+                // HTML: border-bottom: 2px solid transparent — use layer drawable for underline
+                background = buildTabBackground(false, accentColor)
+                setOnClickListener {
+                    categoryTabSubject.onNext(category)
                 }
+            }
+            binding.categoryTabsContainer.addView(tab)
+        }
+        // Activate the first (ALL) tab
+        (binding.categoryTabsContainer.getChildAt(0) as? TextView)?.let { tab ->
+            tab.setTextColor(accentColor)
+            tab.background = buildTabBackground(true, accentColor)
+            activeTabView = tab
+        }
+    }
+
+    private fun buildTabBackground(active: Boolean, accentColor: Int): android.graphics.drawable.LayerDrawable {
+        val underline = android.graphics.drawable.GradientDrawable().apply {
+            setColor(if (active) accentColor else android.graphics.Color.TRANSPARENT)
+        }
+        val layer = android.graphics.drawable.LayerDrawable(arrayOf(underline))
+        val dp2 = (2 * resources.displayMetrics.density).toInt()
+        layer.setLayerInset(0, 0, dp2 * 20, 0, 0) // push underline to bottom 2dp strip
+        return layer
+    }
+
+    private fun updateActiveCategoryTab(category: MessageCategory) {
+        val accentColor = resolveThemeColor(android.R.attr.colorAccent)
+        val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
+        val index = MessageCategory.values().indexOf(category)
+        activeTabView?.let { prev ->
+            prev.setTextColor(defaultColor)
+            prev.background = buildTabBackground(false, accentColor)
+        }
+        val newActive = binding.categoryTabsContainer.getChildAt(index) as? TextView
+        newActive?.let { tab ->
+            tab.setTextColor(accentColor)
+            tab.background = buildTabBackground(true, accentColor)
+        }
+        activeTabView = newActive
+    }
+
+    private fun showMoveToCategoryDialog(threadId: Long) {
+        val categories = MessageCategory.values().filter { it != MessageCategory.ALL }
+        val labels = categories.map { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Move to Category")
+            .setItems(labels) { _, which ->
+                moveToCategorySubject.onNext(Pair(threadId, categories[which]))
+            }
+            .setNegativeButton(R.string.button_cancel, null)
+            .show()
     }
 
     override fun onNewIntent(intent: Intent?) =
@@ -240,37 +310,23 @@ class MainActivity : QkThemedActivity(), MainView {
             else -> 0
         }
 
-        binding.toolbarSearch.setVisible(state.page is Inbox &&
-                state.page.selected == 0 ||
-                state.page is Searching
-        )
-        binding.toolbarTitle.setVisible(binding.toolbarSearch.visibility != View.VISIBLE)
-
-        binding.toolbar.menu.apply {
-            findItem(R.id.select_all)?.isVisible =
-                (conversationsAdapter.itemCount > 1) && selectedConversations != 0
-            findItem(R.id.archive)?.isVisible =
-                state.page is Inbox && selectedConversations != 0
-            findItem(R.id.unarchive)?.isVisible =
-                state.page is Archived && selectedConversations != 0
-            findItem(R.id.delete)?.isVisible = selectedConversations != 0
-            findItem(R.id.add)?.isVisible = addContact && selectedConversations != 0
-            findItem(R.id.pin)?.isVisible = markPinned && selectedConversations != 0
-            findItem(R.id.unpin)?.isVisible = !markPinned && selectedConversations != 0
-            findItem(R.id.read)?.isVisible = ( markRead && selectedConversations != 0 ) ||
-                    selectedConversations > 1
-            findItem(R.id.unread)?.isVisible = ( !markRead && selectedConversations != 0 ) ||
-                    selectedConversations > 1
-            findItem(R.id.block)?.isVisible = selectedConversations != 0
-            findItem(R.id.rename)?.isVisible = selectedConversations == 1
+        // In new layout, search bar is always visible; title row toggles based on selection
+        binding.inboxHead.isVisible = state.page is Inbox || state.page is Searching || state.page is Archived
+        binding.toolbarTitle.text = when {
+            state.page is Inbox && state.page.selected > 0 ->
+                getString(R.string.main_title_selected, state.page.selected)
+            state.page is Archived && state.page.selected > 0 ->
+                getString(R.string.main_title_selected, state.page.selected)
+            state.page is Archived -> getString(R.string.title_archived)
+            else -> getString(R.string.main_title_messages)
         }
 
-        listOf(binding.drawer.plusBadge1, binding.drawer.plusBadge2).forEach { badge ->
-            badge.isVisible = drawerBadgesExperiment.variant && !state.upgraded
-        }
-//        plus.isVisible = state.upgraded
-        binding.drawer.plusBanner.isVisible = !state.upgraded
-        binding.drawer.rateLayout.setVisible(state.showRating)
+        // Category tabs only visible on Inbox/Archived
+        binding.categoryTabsScroll.isVisible = state.page is Inbox || state.page is Archived
+        binding.tabsDivider.isVisible = true
+
+        // Context action menu (shown when conversations selected)
+        // These are surfaced via the overflowIcon popup in onCreate
 
         binding.compose.setVisible(state.page is Inbox || state.page is Archived)
         conversationsAdapter.emptyView = binding.empty.takeIf {
@@ -280,29 +336,29 @@ class MainActivity : QkThemedActivity(), MainView {
 
         when (state.page) {
             is Inbox -> {
-                showBackButton(state.page.selected > 0)
-                title = getString(R.string.main_title_selected, state.page.selected)
+                binding.recyclerView.isVisible = true
+                binding.financePlaceholder.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
                 itemTouchHelper.attachToRecyclerView(binding.recyclerView)
                 binding.empty.setText(R.string.inbox_empty_text)
+                updateActiveCategoryTab(state.page.activeCategory)
             }
 
             is Searching -> {
-                showBackButton(true)
-                if (binding.recyclerView.adapter !== searchAdapter) binding.recyclerView.adapter = searchAdapter
+                binding.recyclerView.isVisible = true
+                binding.financePlaceholder.isVisible = false
+                if (binding.recyclerView.adapter !== searchAdapter)
+                    binding.recyclerView.adapter = searchAdapter
                 searchAdapter.data = state.page.data ?: listOf()
                 itemTouchHelper.attachToRecyclerView(null)
                 binding.empty.setText(R.string.inbox_search_empty_text)
             }
 
             is Archived -> {
-                showBackButton(state.page.selected > 0)
-                title = when (state.page.selected != 0) {
-                    true -> getString(R.string.main_title_selected, state.page.selected)
-                    false -> getString(R.string.title_archived)
-                }
+                binding.recyclerView.isVisible = true
+                binding.financePlaceholder.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
@@ -310,16 +366,13 @@ class MainActivity : QkThemedActivity(), MainView {
                 binding.empty.setText(R.string.archived_empty_text)
             }
 
+            is Finance -> {
+                binding.recyclerView.isVisible = false
+                binding.financePlaceholder.isVisible = true
+            }
+
             else -> {}
         }
-
-        binding.drawer.inbox.isActivated = state.page is Inbox
-        binding.drawer.archived.isActivated = state.page is Archived
-
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START) && !state.drawerOpen)
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
-        else if (!binding.drawerLayout.isDrawerVisible(GravityCompat.START) && state.drawerOpen)
-            binding.drawerLayout.openDrawer(GravityCompat.START)
 
         when (state.syncing) {
             is SyncRepository.SyncProgress.Idle -> {
@@ -358,19 +411,16 @@ class MainActivity : QkThemedActivity(), MainView {
                 snackbarBinding.snackbarMessage.setText(R.string.main_default_sms_message)
                 snackbarBinding.snackbarButton.setText(R.string.main_default_sms_change)
             }
-
             !state.smsPermission -> {
                 snackbarBinding.snackbarTitle.setText(R.string.main_permission_required)
                 snackbarBinding.snackbarMessage.setText(R.string.main_permission_sms)
                 snackbarBinding.snackbarButton.setText(R.string.main_permission_allow)
             }
-
             !state.contactPermission -> {
                 snackbarBinding.snackbarTitle.setText(R.string.main_permission_required)
                 snackbarBinding.snackbarMessage.setText(R.string.main_permission_contacts)
                 snackbarBinding.snackbarButton.setText(R.string.main_permission_allow)
             }
-
             !state.notificationPermission -> {
                 snackbarBinding.snackbarTitle.setText(R.string.main_permission_required)
                 snackbarBinding.snackbarMessage.setText(R.string.main_permission_notifications)
@@ -388,15 +438,6 @@ class MainActivity : QkThemedActivity(), MainView {
     override fun onDestroy() =
         super.onDestroy().also { disposables.dispose() }
 
-    override fun showBackButton(show: Boolean) =
-        toggle.let {
-            it.onDrawerSlide(binding.drawer.root, if (show) 1f else 0f)
-            it.drawerArrowDrawable.color = when (show) {
-                true -> resolveThemeColor(android.R.attr.textColorSecondary)
-                false -> resolveThemeColor(android.R.attr.textColorPrimary)
-            }
-        }
-
     override fun requestDefaultSms() =
         navigator.showDefaultSmsDialog(this)
 
@@ -406,10 +447,8 @@ class MainActivity : QkThemedActivity(), MainView {
             Manifest.permission.SEND_SMS,
             Manifest.permission.READ_CONTACTS
         )
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             permissions += Manifest.permission.POST_NOTIFICATIONS
-
         ActivityCompat.requestPermissions(this, permissions.toTypedArray(), 0)
     }
 
@@ -457,7 +496,7 @@ class MainActivity : QkThemedActivity(), MainView {
 
     override fun showArchivedSnackbar(countConversationsArchived: Int, isArchiving: Boolean) =
         Snackbar.make(
-            binding.drawerLayout,
+            binding.root,
             if (isArchiving) {
                 resources.getQuantityString(R.plurals.toast_archived, countConversationsArchived, countConversationsArchived)
             } else {
@@ -471,23 +510,12 @@ class MainActivity : QkThemedActivity(), MainView {
             it.show()
         }
 
-    override fun onCreateOptionsMenu(menu: Menu?) =
-        menu?.let {
-            menuInflater.inflate(R.menu.main, it)
-            super.onCreateOptionsMenu(it)
-        } ?: false
-
-    override fun onOptionsItemSelected(item: MenuItem) =
-        optionsItemIntent.onNext(item.itemId).let { true }
-
-    override fun onBackPressed() = backPressedSubject.onNext(NavItem.BACK)
-
-    override fun drawerToggled(opened: Boolean) {
-        if (opened) {
-            dismissKeyboard()
-            if (!binding.drawer.inbox.isInTouchMode)
-                binding.drawer.inbox.requestFocus()
-        } else
-            binding.toolbarSearch.requestFocus()
+    override fun onBackPressed() {
+        // If searching, clear search; otherwise default back
+        if (binding.toolbarSearch.text?.isNotEmpty() == true) {
+            clearSearch()
+        } else {
+            super.onBackPressed()
+        }
     }
 }

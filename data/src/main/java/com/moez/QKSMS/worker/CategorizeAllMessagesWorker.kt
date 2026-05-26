@@ -65,7 +65,7 @@ class CategorizeAllMessagesWorker(
     companion object {
         // Tag used to identify this work request in WorkManager's queue.
         // Using a tag lets us cancel or query the work later if needed.
-        private const val WORKER_TAG = "categorize_all_messages_v1"
+        private const val WORKER_TAG = "categorize_all_messages_v3"
 
         /**
          * Enqueues this worker as a one-time background job.
@@ -105,13 +105,11 @@ class CategorizeAllMessagesWorker(
         // Each thread must open its own Realm instance — Realm is thread-local.
         Realm.getDefaultInstance().use { realm ->
 
-            // Query all Conversations that are still in the default "ALL" state.
-            // These are conversations that were imported BEFORE Phase 1 was installed,
-            // plus any that slipped through (e.g. if ReceiveSmsWorker ran before
-            // the categorizer was injected during an upgrade).
+            // Re-categorize ALL conversations so the new PERSONAL/ALL logic applies.
+            // This is safe to do on every version bump — conversations get the right
+            // category assigned and the worker won't run again until the next version.
             val uncategorized = realm
                 .where(Conversation::class.java)
-                .equalTo("categoryId", MessageCategory.ALL.name)
                 .isNotEmpty("recipients")     // skip ghost conversations with no recipients
                 .findAll()
 
@@ -138,30 +136,25 @@ class CategorizeAllMessagesWorker(
                     body    = lastMessage.body
                 )
 
-                // Only write to Realm if we determined a SPECIFIC category
-                // (i.e. not ALL). If categorize() returns ALL, the conversation
-                // stays as ALL and will still appear in the "All" tab — that's fine.
-                if (category != MessageCategory.ALL) {
-                    realm.executeTransaction { r ->
-                        // Update the Conversation.
-                        // `.apply {}` is used because `?.field = value` is not valid Kotlin.
-                        r.where(Conversation::class.java)
-                            .equalTo("id", conversation.id)
-                            .findFirst()
-                            ?.apply { categoryId = category.name }
+                // Always write the category — this is a full re-categorization pass.
+                realm.executeTransaction { r ->
+                    r.where(Conversation::class.java)
+                        .equalTo("id", conversation.id)
+                        .findFirst()
+                        ?.apply { categoryId = category.name }
 
-                        // Update all Messages in this thread
-                        r.where(Message::class.java)
-                            .equalTo("threadId", conversation.id)
-                            .findAll()
-                            .forEach { it.categoryId = category.name }
-                    }
+                    r.where(Message::class.java)
+                        .equalTo("threadId", conversation.id)
+                        .findAll()
+                        .forEach { it.categoryId = category.name }
                 }
             }
         }
 
         // Mark the one-time migration as done so this worker never runs again
         prefs.categorizedV1Done.set(true)
+        prefs.categorizedV2Done.set(true)
+        prefs.categorizedV3Done.set(true)
 
         Timber.d("CategorizeAllMessagesWorker: completed successfully")
         return Result.success()
