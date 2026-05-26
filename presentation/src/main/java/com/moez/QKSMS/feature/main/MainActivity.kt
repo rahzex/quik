@@ -343,6 +343,7 @@ class MainActivity : QkThemedActivity(), MainView {
                 conversationsAdapter.updateData(state.page.data)
                 itemTouchHelper.attachToRecyclerView(binding.recyclerView)
                 binding.empty.setText(R.string.inbox_empty_text)
+                conversationsAdapter.activeCategory = state.page.activeCategory
                 updateActiveCategoryTab(state.page.activeCategory)
             }
 

@@ -58,6 +58,9 @@ class ConversationsAdapter @Inject constructor(
     private val _moveToCategoryRequest: Subject<Long> = PublishSubject.create()
     val moveToCategoryRequest: Observable<Long> = _moveToCategoryRequest
 
+    /** Set by MainActivity when the active tab changes — controls badge visibility. */
+    var activeCategory: MessageCategory = MessageCategory.ALL
+
     init {
         // This is how we access the threadId for the swipe actions
         setHasStableIds(true)
@@ -147,9 +150,10 @@ class ConversationsAdapter @Inject constructor(
         // Always use accent blue (#1a56db) matching HTML --accent, not per-conversation theme color
         binding.unread.imageTintList = android.content.res.ColorStateList.valueOf(0xFF1a56db.toInt())
 
-        // Category badge (matches HTML .msg-tag — between name row and preview)
+        // Category badge — only show on the ALL tab; other tabs already imply the category
         val category = conversation.category
-        if (category != MessageCategory.ALL && category != MessageCategory.PERSONAL) {
+        if (activeCategory == MessageCategory.ALL &&
+            category != MessageCategory.ALL && category != MessageCategory.PERSONAL) {
             binding.categoryBadge.isVisible = true
             // Contextual label matching HTML mockup style
             binding.categoryBadge.text = when (category) {
