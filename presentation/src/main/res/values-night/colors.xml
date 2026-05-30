@@ -4,5 +4,29 @@
     <color name="incoming_bubble">#242D35</color>
     <!-- Incoming bubble text: light in dark mode -->
     <color name="incoming_bubble_text">#E8EAF0</color>
+
+    <!-- Category avatar / badge colours (dark mode) -->
+    <color name="cat_personal_bg">#1A2744</color>
+    <color name="cat_personal_fg">#7EAAFF</color>
+    <color name="cat_transactions_bg">#2A2A28</color>
+    <color name="cat_transactions_fg">#BDBDB8</color>
+    <color name="cat_transactions_badge_bg">#0E1F14</color>
+    <color name="cat_transactions_badge_fg">#3DAB6A</color>
+    <color name="cat_otp_bg">#2D1A36</color>
+    <color name="cat_otp_fg">#CE93D8</color>
+    <color name="cat_updates_bg">#1A2744</color>
+    <color name="cat_updates_fg">#7EAAFF</color>
+    <color name="cat_promos_bg">#2E2410</color>
+    <color name="cat_promos_fg">#FFC04D</color>
+    <color name="cat_spam_bg">#2A1010</color>
+    <color name="cat_spam_fg">#E57373</color>
+    <color name="cat_default_bg">#2A2A2A</color>
+    <color name="cat_default_fg">#BDBDBD</color>
+
+    <!-- Finance card (Credit/Debit detected) dark mode -->
+    <color name="finance_green_bg">#0E1F14</color>
+    <color name="finance_green_text">#3DAB6A</color>
+    <color name="finance_red_bg">#2A1010</color>
+    <color name="finance_red_text">#E57373</color>
 </resources>
 

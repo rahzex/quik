@@ -31,6 +31,7 @@ import dev.octoshrimpy.quik.common.base.QkBindingViewHolder
 import dev.octoshrimpy.quik.common.base.QkRealmAdapter
 import dev.octoshrimpy.quik.common.util.Colors
 import dev.octoshrimpy.quik.common.util.DateFormatter
+import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.setTint
 import dev.octoshrimpy.quik.databinding.ConversationListItemBinding
@@ -165,12 +166,12 @@ class ConversationsAdapter @Inject constructor(
                 else                         -> category.name.lowercase().replaceFirstChar { it.uppercase() }
             }
             val (bgColor, textColor) = when (category) {
-                MessageCategory.TRANSACTIONS -> Pair(0xFFF0FAF4.toInt(), 0xFF1A7F4B.toInt())
-                MessageCategory.OTP          -> Pair(0xFFF3E5F5.toInt(), 0xFF7B1FA2.toInt())
-                MessageCategory.UPDATES      -> Pair(0xFFE8F0FE.toInt(), 0xFF1A56DB.toInt())
-                MessageCategory.PROMOS       -> Pair(0xFFFFFBEB.toInt(), 0xFFB45309.toInt())
-                MessageCategory.SPAM         -> Pair(0xFFFFF0F0.toInt(), 0xFFC0392B.toInt())
-                else                         -> Pair(0xFFEEEEEE.toInt(), 0xFF424242.toInt())
+                MessageCategory.TRANSACTIONS -> Pair(holder.itemView.context.getColorCompat(R.color.cat_transactions_badge_bg), holder.itemView.context.getColorCompat(R.color.cat_transactions_badge_fg))
+                MessageCategory.OTP          -> Pair(holder.itemView.context.getColorCompat(R.color.cat_otp_bg),          holder.itemView.context.getColorCompat(R.color.cat_otp_fg))
+                MessageCategory.UPDATES      -> Pair(holder.itemView.context.getColorCompat(R.color.cat_updates_bg),      holder.itemView.context.getColorCompat(R.color.cat_updates_fg))
+                MessageCategory.PROMOS       -> Pair(holder.itemView.context.getColorCompat(R.color.cat_promos_bg),       holder.itemView.context.getColorCompat(R.color.cat_promos_fg))
+                MessageCategory.SPAM         -> Pair(holder.itemView.context.getColorCompat(R.color.cat_spam_bg),         holder.itemView.context.getColorCompat(R.color.cat_spam_fg))
+                else                         -> Pair(holder.itemView.context.getColorCompat(R.color.cat_default_bg),      holder.itemView.context.getColorCompat(R.color.cat_default_fg))
             }
             binding.categoryBadge.setBackgroundColor(bgColor)
             binding.categoryBadge.setTextColor(textColor)

@@ -1,0 +1,1 @@
+Always Build and install apk in connected device, if any. If no device is connected, build apk and save it in the output folder.

@@ -76,6 +76,24 @@
     <color name="finance_green_text">#1A7F4B</color>
     <color name="finance_green_bg">#F0FAF4</color>
 
+    <!-- Category avatar / badge colours (light mode) -->
+    <color name="cat_personal_bg">#E8F0FE</color>
+    <color name="cat_personal_fg">#1A56DB</color>
+    <color name="cat_transactions_bg">#F0F0EC</color>
+    <color name="cat_transactions_fg">#6B6B67</color>
+    <color name="cat_transactions_badge_bg">#F0FAF4</color>
+    <color name="cat_transactions_badge_fg">#1A7F4B</color>
+    <color name="cat_otp_bg">#F3E5F5</color>
+    <color name="cat_otp_fg">#7B1FA2</color>
+    <color name="cat_updates_bg">#E8F0FE</color>
+    <color name="cat_updates_fg">#1A56DB</color>
+    <color name="cat_promos_bg">#FFFBEB</color>
+    <color name="cat_promos_fg">#B45309</color>
+    <color name="cat_spam_bg">#FFF0F0</color>
+    <color name="cat_spam_fg">#C0392B</color>
+    <color name="cat_default_bg">#EEEEEE</color>
+    <color name="cat_default_fg">#424242</color>
+
     <array name="random_colors">
         <item>#06C9AF</item>
         <item>#6DC966</item>

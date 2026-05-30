@@ -24,6 +24,7 @@ import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
+import dev.octoshrimpy.quik.R
 import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.setBackgroundTint
@@ -68,15 +69,17 @@ class GroupAvatarView @JvmOverloads constructor(
     }
 
     fun setCategory(category: MessageCategory) {
-        val (bg, fg) = when (category) {
-            MessageCategory.PERSONAL     -> 0xFFE8F0FE.toInt() to 0xFF1A56DB.toInt()
-            MessageCategory.TRANSACTIONS -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
-            MessageCategory.OTP          -> 0xFFF3E5F5.toInt() to 0xFF7B1FA2.toInt()
-            MessageCategory.UPDATES      -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
-            MessageCategory.PROMOS       -> 0xFFFFFBEB.toInt() to 0xFFB45309.toInt()
-            MessageCategory.SPAM         -> 0xFFFFF0F0.toInt() to 0xFFC0392B.toInt()
-            else                         -> 0xFFF0F0EC.toInt() to 0xFF6B6B67.toInt()
+        val (bgRes, fgRes) = when (category) {
+            MessageCategory.PERSONAL     -> R.color.cat_personal_bg     to R.color.cat_personal_fg
+            MessageCategory.TRANSACTIONS -> R.color.cat_transactions_bg to R.color.cat_transactions_fg
+            MessageCategory.OTP          -> R.color.cat_otp_bg          to R.color.cat_otp_fg
+            MessageCategory.UPDATES      -> R.color.cat_updates_bg      to R.color.cat_updates_fg
+            MessageCategory.PROMOS       -> R.color.cat_promos_bg       to R.color.cat_promos_fg
+            MessageCategory.SPAM         -> R.color.cat_spam_bg         to R.color.cat_spam_fg
+            else                         -> R.color.cat_default_bg      to R.color.cat_default_fg
         }
+        val bg = context.getColorCompat(bgRes)
+        val fg = context.getColorCompat(fgRes)
         layout.avatar1.applyCategoryStyle(bg, fg)
         layout.avatar2.applyCategoryStyle(bg, fg)
     }

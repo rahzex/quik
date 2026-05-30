@@ -67,6 +67,7 @@ import dev.octoshrimpy.quik.common.base.QkThemedActivity
 import dev.octoshrimpy.quik.common.util.DateFormatter
 import dev.octoshrimpy.quik.common.util.extensions.autoScrollToStart
 import dev.octoshrimpy.quik.common.util.extensions.dpToPx
+import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.hideKeyboard
 import dev.octoshrimpy.quik.common.util.extensions.makeToast
 import dev.octoshrimpy.quik.common.util.extensions.scrapViews
@@ -423,13 +424,14 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
             category != dev.octoshrimpy.quik.model.MessageCategory.PERSONAL) {
             binding.categoryBadge.visibility = android.view.View.VISIBLE
             binding.categoryBadge.text = category.name.lowercase().replaceFirstChar { it.uppercase() }
+            val ctx = binding.root.context
             val (bgColor, textColor) = when (category) {
-                dev.octoshrimpy.quik.model.MessageCategory.TRANSACTIONS -> Pair(0xFFF0FAF4.toInt(), 0xFF1A7F4B.toInt())
-                dev.octoshrimpy.quik.model.MessageCategory.OTP          -> Pair(0xFFF3E5F5.toInt(), 0xFF7B1FA2.toInt())
-                dev.octoshrimpy.quik.model.MessageCategory.UPDATES      -> Pair(0xFFE8F0FE.toInt(), 0xFF1A56DB.toInt())
-                dev.octoshrimpy.quik.model.MessageCategory.PROMOS       -> Pair(0xFFFFFBEB.toInt(), 0xFFB45309.toInt())
-                dev.octoshrimpy.quik.model.MessageCategory.SPAM         -> Pair(0xFFFFF0F0.toInt(), 0xFFC0392B.toInt())
-                else                                                     -> Pair(0xFFEEEEEE.toInt(), 0xFF424242.toInt())
+                dev.octoshrimpy.quik.model.MessageCategory.TRANSACTIONS -> Pair(ctx.getColorCompat(R.color.cat_transactions_badge_bg), ctx.getColorCompat(R.color.cat_transactions_badge_fg))
+                dev.octoshrimpy.quik.model.MessageCategory.OTP          -> Pair(ctx.getColorCompat(R.color.cat_otp_bg),                ctx.getColorCompat(R.color.cat_otp_fg))
+                dev.octoshrimpy.quik.model.MessageCategory.UPDATES      -> Pair(ctx.getColorCompat(R.color.cat_updates_bg),            ctx.getColorCompat(R.color.cat_updates_fg))
+                dev.octoshrimpy.quik.model.MessageCategory.PROMOS       -> Pair(ctx.getColorCompat(R.color.cat_promos_bg),             ctx.getColorCompat(R.color.cat_promos_fg))
+                dev.octoshrimpy.quik.model.MessageCategory.SPAM         -> Pair(ctx.getColorCompat(R.color.cat_spam_bg),               ctx.getColorCompat(R.color.cat_spam_fg))
+                else                                                     -> Pair(ctx.getColorCompat(R.color.cat_default_bg),            ctx.getColorCompat(R.color.cat_default_fg))
             }
             binding.categoryBadge.backgroundTintList = android.content.res.ColorStateList.valueOf(bgColor)
             binding.categoryBadge.setTextColor(textColor)
