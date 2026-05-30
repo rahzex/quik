@@ -48,6 +48,7 @@ import dev.octoshrimpy.quik.common.Navigator
 import dev.octoshrimpy.quik.common.base.QkThemedActivity
 import dev.octoshrimpy.quik.common.util.extensions.autoScrollToStart
 import dev.octoshrimpy.quik.common.util.extensions.dismissKeyboard
+import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
 import dev.octoshrimpy.quik.common.util.extensions.scrapViews
 import dev.octoshrimpy.quik.common.util.extensions.setBackgroundTint
@@ -203,7 +204,7 @@ class MainActivity : QkThemedActivity(), MainView {
 
     private fun setupCategoryTabs() {
         val categories = MessageCategory.values()
-        val accentColor = 0xFF1a56db.toInt() // fixed accent blue matching HTML --accent and bottom nav
+        val accentColor = getColorCompat(R.color.accent) // theme-aware accent (light: #1A56DB, dark: #5B8DEF)
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
         val displayNames = mapOf(
             MessageCategory.ALL          to "All",
@@ -255,7 +256,7 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     private fun updateActiveCategoryTab(category: MessageCategory) {
-        val accentColor = 0xFF1a56db.toInt() // fixed accent blue matching HTML --accent and bottom nav
+        val accentColor = getColorCompat(R.color.accent) // theme-aware accent
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
         val index = MessageCategory.values().indexOf(category)
         activeTabView?.let { prev ->

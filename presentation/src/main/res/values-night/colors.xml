@@ -5,6 +5,9 @@
     <!-- Incoming bubble text: light in dark mode -->
     <color name="incoming_bubble_text">#E8EAF0</color>
 
+    <!-- Accent colour: brighter in dark mode for visibility on dark backgrounds -->
+    <color name="accent">#5B8DEF</color>
+
     <!-- Category avatar / badge colours (dark mode) -->
     <color name="cat_personal_bg">#1A2744</color>
     <color name="cat_personal_fg">#7EAAFF</color>
