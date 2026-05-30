@@ -117,10 +117,13 @@ class ParseAllTransactionsWorker(
                     accountLast4     = data.accountLast4
                     availableBalance = data.availableBalance
                     method           = data.method
+                    bankName         = data.bankName
                     year             = cal.get(java.util.Calendar.YEAR)
                     month            = cal.get(java.util.Calendar.MONTH) + 1
                 }
-                batch.add(Pair(txn, "${message.address}:${data.accountLast4}"))
+                // Use bankName as key prefix so all sender IDs for same bank+account merge
+                val keyPrefix = data.bankName.ifBlank { message.address }
+                batch.add(Pair(txn, "$keyPrefix:${data.accountLast4}"))
                 parsed++
 
                 // Commit in batches to keep write-lock duration short.
@@ -157,11 +160,14 @@ class ParseAllTransactionsWorker(
                     if (existing == null || existing.lastUpdated < txn.date) {
                         r.copyToRealmOrUpdate(
                             dev.octoshrimpy.quik.model.AccountBalance().apply {
-                                id             = balKey
-                                senderPattern  = balKey.substringBefore(":")
-                                accountLast4   = txn.accountLast4
-                                balance        = txn.availableBalance
-                                lastUpdated    = txn.date
+                                id            = balKey
+                                senderPattern = balKey.substringBefore(":")
+                                accountLast4  = txn.accountLast4
+                                this.balance  = txn.availableBalance
+                                bankName      = txn.bankName.ifBlank { balKey.substringBefore(":") }
+                                accountType   = dev.octoshrimpy.quik.categorization.TransactionParserImpl
+                                    .extractAccountType(txn.method, txn.method)
+                                lastUpdated   = txn.date
                             }
                         )
                     }

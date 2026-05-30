@@ -186,7 +186,9 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
                             senderAddress = message.address,
                             accountLast4  = data.accountLast4,
                             balance       = data.availableBalance,
-                            ts            = message.date
+                            ts            = message.date,
+                            bankName      = data.bankName,
+                            accountType   = data.accountType
                         )
                     }
                     Timber.v("finance: parsed ${if (data.isDebit) "debit" else "credit"} ₹${data.amount}")

@@ -22,7 +22,6 @@ import dev.octoshrimpy.quik.categorization.ParsedTransactionData
 import dev.octoshrimpy.quik.model.AccountBalance
 import dev.octoshrimpy.quik.model.Message
 import dev.octoshrimpy.quik.model.ParsedTransaction
-import io.realm.RealmResults
 
 /**
  * Contract for all Finance Dashboard data operations.
@@ -40,9 +39,9 @@ interface FinanceRepository {
 
     /**
      * Returns all [ParsedTransaction] rows for the given calendar month, sorted by date descending.
-     * The returned [RealmResults] is live — it auto-updates when new rows are inserted.
+     * Returns detached (copied) objects safe to use on any thread.
      */
-    fun getTransactions(year: Int, month: Int): RealmResults<ParsedTransaction>
+    fun getTransactions(year: Int, month: Int): List<ParsedTransaction>
 
     /**
      * Returns the total amount debited (spent) in the given month, in INR.
@@ -52,15 +51,27 @@ interface FinanceRepository {
 
     /**
      * Returns the total amount credited (received) in the given month, in INR.
-     * Returns 0.0 if there are no credit transactions for that month.
+     *
+     * **Salary-shift rule:** large credits (≥ [SALARY_THRESHOLD]) that fall in the
+     * last 3 days of a month are treated as salary paid early for the *next* month.
+     * They are excluded from the current month's total and included in the next month's total.
+     *
+     * Returns 0.0 if there are no qualifying credit transactions for that month.
      */
     fun getReceivedTotal(year: Int, month: Int): Double
 
     /**
-     * Returns all known [AccountBalance] rows, sorted by [AccountBalance.lastUpdated] descending
-     * (most recently seen account first). Live Realm results.
+     * Returns true if [txn] is a salary credit — i.e. a large credit (≥ [SALARY_THRESHOLD])
+     * that arrived in the last 3 days of its calendar month.
+     * Such transactions are attributed to the *following* month's income.
      */
-    fun getAccounts(): RealmResults<AccountBalance>
+    fun isSalaryCredit(txn: ParsedTransaction): Boolean
+
+    /**
+     * Returns all known [AccountBalance] rows, sorted by [AccountBalance.lastUpdated] descending.
+     * Returns detached (copied) objects safe to use on any thread.
+     */
+    fun getAccounts(): List<AccountBalance>
 
     /**
      * Returns upcoming credit card bill statements parsed from SMS bodies
@@ -83,7 +94,13 @@ interface FinanceRepository {
         senderAddress: String,
         accountLast4: String,
         balance: Double,
-        ts: Long
+        ts: Long,
+        bankName: String = "",
+        accountType: String = "Savings A/C"
     )
-}
 
+    companion object {
+        /** Credits at or above this amount in the last 3 days of a month are treated as next-month salary. */
+        const val SALARY_THRESHOLD = 10_000.0
+    }
+}

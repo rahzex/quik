@@ -20,7 +20,6 @@ package dev.octoshrimpy.quik.feature.finance
 
 import dev.octoshrimpy.quik.model.AccountBalance
 import dev.octoshrimpy.quik.model.ParsedTransaction
-import io.realm.RealmResults
 import java.util.Calendar
 
 data class FinanceState(
@@ -28,7 +27,7 @@ data class FinanceState(
     val selectedMonth: Int = Calendar.getInstance().get(Calendar.MONTH) + 1, // 1-based
     val totalSpent: Double    = 0.0,
     val totalReceived: Double = 0.0,
-    val accounts: RealmResults<AccountBalance>? = null,
+    val accounts: List<AccountBalance> = emptyList(),
     val upcomingBills: List<ParsedTransaction> = emptyList(),
     val isLoading: Boolean = true
 ) {

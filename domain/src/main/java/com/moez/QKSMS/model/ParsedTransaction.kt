@@ -77,6 +77,13 @@ open class ParsedTransaction : RealmObject() {
     var method: String = "Other"
 
     /**
+     * Human-readable bank name extracted from the SMS body.
+     * e.g. "HDFC Bank", "SBI", "ICICI Bank", "PNB", "Bandhan Bank".
+     * Empty string if not determined.
+     */
+    var bankName: String = ""
+
+    /**
      * Calendar year extracted from [date]. Indexed for fast month-filter queries.
      * Stored denormalized (instead of computing on every query) for Realm performance.
      */

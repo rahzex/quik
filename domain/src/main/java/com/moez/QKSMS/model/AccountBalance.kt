@@ -33,30 +33,30 @@ import io.realm.annotations.PrimaryKey
  */
 open class AccountBalance : RealmObject() {
 
-    /**
-     * Composite primary key: "[senderPattern]:[accountLast4]".
-     * e.g. "JXHDFCBK:7472".
-     */
+    /** Composite primary key: "[senderPattern]:[accountLast4]". e.g. "JXHDFCBK:7472". */
     @PrimaryKey
     var id: String = ""
 
-    /**
-     * The raw alphanumeric sender ID from the SMS (e.g. "JXHDFCBK").
-     * Used to re-identify the bank for display purposes.
-     */
+    /** The raw alphanumeric sender ID from the SMS (e.g. "JXHDFCBK"). */
     var senderPattern: String = ""
 
-    /**
-     * Last 4 digits of the account or card number (e.g. "7472").
-     * Displayed as "·· 7472" in the Finance Dashboard account card.
-     */
+    /** Last 4 digits of the account or card number (e.g. "7472"). */
     var accountLast4: String = ""
 
-    /**
-     * Last known available balance, in INR.
-     * Sourced from the "Avl bal" / "Aval Bal" / "Bal" field in the SMS body.
-     */
+    /** Last known available balance in INR, sourced from "Avl bal" / "Bal" in the SMS. */
     var balance: Double = 0.0
+
+    /**
+     * Human-readable bank name extracted from the SMS body.
+     * e.g. "HDFC Bank", "SBI", "ICICI Bank", "PNB", "Bandhan Bank". Empty if undetermined.
+     */
+    var bankName: String = ""
+
+    /**
+     * Account/card type: "Savings A/C", "Debit Card", or "Credit Card".
+     * Derived from the SMS body context (ATM withdrawal → Debit Card, credit card SMS → Credit Card).
+     */
+    var accountType: String = "Savings A/C"
 
     /**
      * Timestamp (ms since epoch) of the most recent message that updated this balance.
@@ -64,4 +64,3 @@ open class AccountBalance : RealmObject() {
      */
     var lastUpdated: Long = 0
 }
-

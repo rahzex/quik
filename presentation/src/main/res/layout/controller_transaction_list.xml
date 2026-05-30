@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Transaction list screen: All Debits / All Credits -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?android:attr/windowBackground">
+
+    <!-- Header bar -->
+    <LinearLayout
+        android:id="@+id/headerBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="6dp"
+        android:paddingEnd="18dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:background="?android:attr/colorBackground"
+        android:elevation="2dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_arrow_back_24dp"
+            android:tint="?android:attr/textColorSecondary"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:scaleType="center" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="6dp">
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/txnListTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="normal"
+                android:letterSpacing="-0.02"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="All Debits" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/txnListSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="1dp"
+                tools:text="May 2026" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
+
+    <!-- Summary strip -->
+    <LinearLayout
+        android:id="@+id/summaryStrip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="?android:attr/colorBackground">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="3dp"
+                tools:text="Total spent" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryAmount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="26sp"
+                android:textStyle="normal"
+                android:letterSpacing="-0.04"
+                tools:text="₹24,100" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryMeta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:layout_marginTop="3dp"
+                tools:text="14 transactions" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryRightLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginBottom="3dp"
+                tools:text="Transactions" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryRightValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="26sp"
+                android:textStyle="normal"
+                android:letterSpacing="-0.04"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="14" />
+
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/summaryRightMeta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:layout_marginTop="3dp"
+                tools:text="across 3 accounts" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
+
+    <!-- Transaction list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/txnRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:listitem="@layout/transaction_list_item" />
+
+</LinearLayout>
+

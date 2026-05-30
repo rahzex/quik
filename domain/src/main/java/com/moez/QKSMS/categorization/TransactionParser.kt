@@ -33,6 +33,8 @@ package dev.octoshrimpy.quik.categorization
  * @param availableBalance Available balance AFTER the transaction, or -1.0 if not in the message.
  * @param method           Payment method string: "UPI", "NEFT", "IMPS", "RTGS", "ATM",
  *                         "Card", "Statement", or "Other".
+ * @param bankName         Human-readable bank name extracted from SMS body ("HDFC Bank", "SBI", etc.)
+ * @param accountType      "Savings A/C", "Debit Card", or "Credit Card"
  */
 data class ParsedTransactionData(
     val amount: Double,
@@ -41,7 +43,9 @@ data class ParsedTransactionData(
     val reference: String = "",
     val accountLast4: String = "",
     val availableBalance: Double = -1.0,
-    val method: String = "Other"
+    val method: String = "Other",
+    val bankName: String = "",
+    val accountType: String = "Savings A/C"
 )
 
 /**

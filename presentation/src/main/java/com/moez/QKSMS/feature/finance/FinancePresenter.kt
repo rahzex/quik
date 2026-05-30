@@ -2,6 +2,7 @@ package dev.octoshrimpy.quik.feature.finance
 
 import dev.octoshrimpy.quik.common.base.QkPresenter
 import dev.octoshrimpy.quik.repository.FinanceRepository
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import timber.log.Timber
 import java.util.Calendar
@@ -14,12 +15,12 @@ class FinancePresenter @Inject constructor(
     override fun bindIntents(view: FinanceView) {
         super.bindIntents(view)
 
-        // Load current month immediately
+        // Load current month immediately on whichever thread bindIntents is called from
         val now = Calendar.getInstance()
         loadMonth(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1)
 
         view.monthSelectedIntent
-            .subscribeOn(Schedulers.io())
+            .observeOn(Schedulers.io())          // run queries off the main thread
             .subscribe({ (year, month) -> loadMonth(year, month) }, Timber::e)
             .also { disposables.add(it) }
     }
@@ -29,7 +30,7 @@ class FinancePresenter @Inject constructor(
         try {
             val spent    = financeRepo.getSpentTotal(year, month)
             val received = financeRepo.getReceivedTotal(year, month)
-            val accounts = financeRepo.getAccounts()
+            val accounts = financeRepo.getAccounts()      // now synchronous — safe on any thread
             val upcoming = financeRepo.getUpcomingBills()
             newState {
                 copy(

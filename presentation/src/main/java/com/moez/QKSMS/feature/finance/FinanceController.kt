@@ -23,7 +23,6 @@ import dev.octoshrimpy.quik.model.AccountBalance
 import dev.octoshrimpy.quik.model.ParsedTransaction
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
-import io.realm.RealmResults
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Locale
@@ -44,6 +43,10 @@ class FinanceController : QkController<
     private val monthPills = mutableListOf<TextView>()
     private val months     = mutableListOf<Pair<Int, Int>>()
 
+    // Track currently displayed month so click listeners can pass it to TransactionListController
+    private var currentYear  = Calendar.getInstance().get(Calendar.YEAR)
+    private var currentMonth = Calendar.getInstance().get(Calendar.MONTH) + 1
+
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup) =
         ControllerFinanceBinding.inflate(inflater, container, false)
 
@@ -59,6 +62,21 @@ class FinanceController : QkController<
         binding.accountsRecycler.adapter = AccountsAdapter()
         binding.upcomingRecycler.layoutManager = LinearLayoutManager(activity)
         binding.upcomingRecycler.adapter = UpcomingAdapter()
+
+        binding.cardSpent.setOnClickListener {
+            router.pushController(
+                com.bluelinelabs.conductor.RouterTransaction.with(
+                    TransactionListController.newInstance(true, currentYear, currentMonth)
+                )
+            )
+        }
+        binding.cardReceived.setOnClickListener {
+            router.pushController(
+                com.bluelinelabs.conductor.RouterTransaction.with(
+                    TransactionListController.newInstance(false, currentYear, currentMonth)
+                )
+            )
+        }
     }
 
     private fun buildMonthPills() {
@@ -88,6 +106,9 @@ class FinanceController : QkController<
     }
 
     override fun render(state: FinanceState) {
+        currentYear  = state.selectedYear
+        currentMonth = state.selectedMonth
+
         val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
             .apply { maximumFractionDigits = 0 }
 
@@ -109,8 +130,8 @@ class FinanceController : QkController<
         binding.progressSavedLabel.text = "Saved ${100 - pct}%"
 
         val accounts = state.accounts
-        binding.accountsEmpty.isVisible    = accounts == null || accounts.isEmpty()
-        binding.accountsRecycler.isVisible = accounts != null && accounts.isNotEmpty()
+        binding.accountsEmpty.isVisible    = accounts.isEmpty()
+        binding.accountsRecycler.isVisible = accounts.isNotEmpty()
         (binding.accountsRecycler.adapter as? AccountsAdapter)?.update(accounts)
 
         val upcoming = state.upcomingBills
@@ -121,10 +142,28 @@ class FinanceController : QkController<
 
     // ── Adapters ─────────────────────────────────────────────────────────────
 
+    /** Derives a human-readable bank name from the sender ID (e.g. "JXHDFCBK" → "HDFC Bank"). */
+    private fun senderToBankName(sender: String): String {
+        val s = sender.uppercase()
+        return when {
+            "HDFCBK" in s  -> "HDFC Bank"
+            "ICICIT" in s  -> "ICICI Bank"
+            "SBICRD" in s || "SBISMS" in s -> "SBI"
+            "PNBSMS" in s  -> "PNB"
+            "BDNSMS" in s  -> "Bandhan Bank"
+            "AXISBK" in s  -> "Axis Bank"
+            "YESBNK" in s || "YESBKS" in s -> "Yes Bank"
+            "PAYTMB" in s || "PPBL" in s   -> "Paytm Bank"
+            "KOTAKB" in s  -> "Kotak Bank"
+            "INDUSB" in s  -> "IndusInd Bank"
+            else           -> sender
+        }
+    }
+
     inner class AccountsAdapter : RecyclerView.Adapter<AccountsAdapter.VH>() {
         private var items: List<AccountBalance> = emptyList()
-        fun update(results: RealmResults<AccountBalance>?) {
-            items = results?.let { ArrayList(it) } ?: emptyList()
+        fun update(list: List<AccountBalance>) {
+            items = list
             notifyDataSetChanged()
         }
         override fun getItemCount() = items.size
@@ -137,10 +176,20 @@ class FinanceController : QkController<
             fun bind(item: AccountBalance) {
                 val fmt = NumberFormat.getCurrencyInstance(Locale("en", "IN"))
                     .apply { maximumFractionDigits = 0 }
+
+                // Bank display name: prefer stored bankName, fallback to sender-derived name
+                val displayName = item.bankName.ifBlank { senderToBankName(item.senderPattern) }
+                val acctLabel   = when (item.accountType) {
+                    "Credit Card" -> "Credit Card ···· ${item.accountLast4}"
+                    "Debit Card"  -> "Debit Card ···· ${item.accountLast4}"
+                    else          -> "A/C ···· ${item.accountLast4}"
+                }
+
                 itemView.findViewById<TextView>(R.id.accountInitials).text =
-                    item.senderPattern.take(2).uppercase()
-                itemView.findViewById<TextView>(R.id.accountSender).text  = item.senderPattern
-                itemView.findViewById<TextView>(R.id.accountNumber).text  = "·· ${item.accountLast4}"
+                    displayName.split(" ").map { it.firstOrNull()?.toString() ?: "" }
+                        .joinToString("").take(2).uppercase()
+                itemView.findViewById<TextView>(R.id.accountSender).text = displayName
+                itemView.findViewById<TextView>(R.id.accountNumber).text = acctLabel
                 itemView.findViewById<TextView>(R.id.accountBalance).text = fmt.format(item.balance)
             }
         }

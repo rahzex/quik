@@ -22,6 +22,7 @@ import dev.octoshrimpy.quik.categorization.ParsedTransactionData
 import dev.octoshrimpy.quik.model.AccountBalance
 import dev.octoshrimpy.quik.model.Message
 import dev.octoshrimpy.quik.model.ParsedTransaction
+import dev.octoshrimpy.quik.repository.FinanceRepository.Companion.SALARY_THRESHOLD
 import io.realm.Realm
 import io.realm.Sort
 import timber.log.Timber
@@ -41,13 +42,16 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
         }
     }
 
-    override fun getTransactions(year: Int, month: Int) =
-        Realm.getDefaultInstance()
-            .where(ParsedTransaction::class.java)
-            .equalTo("year", year)
-            .equalTo("month", month)
-            .sort("date", Sort.DESCENDING)
-            .findAllAsync()
+    override fun getTransactions(year: Int, month: Int): List<ParsedTransaction> =
+        Realm.getDefaultInstance().use { realm ->
+            realm.copyFromRealm(
+                realm.where(ParsedTransaction::class.java)
+                    .equalTo("year", year)
+                    .equalTo("month", month)
+                    .sort("date", Sort.DESCENDING)
+                    .findAll()
+            )
+        }
 
     override fun getSpentTotal(year: Int, month: Int): Double =
         Realm.getDefaultInstance().use { realm ->
@@ -59,21 +63,87 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
                 .sumOf { it.amount }
         }
 
+    override fun isSalaryCredit(txn: ParsedTransaction): Boolean {
+        if (txn.isDebit) return false
+        // Credit card bill payments are NOT salary income
+        if (txn.method == "Card" || txn.method == "Statement") return false
+        if (txn.amount < SALARY_THRESHOLD) return false
+        val cal      = Calendar.getInstance().apply { timeInMillis = txn.date }
+        val dayOfMonth = cal.get(Calendar.DAY_OF_MONTH)
+        val lastDay  = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        return dayOfMonth >= lastDay - 2
+    }
+
+    /**
+     * Sum of credits for [year]/[month] applying the salary-shift rule:
+     * - Exclude salary credits that physically arrived THIS month (they belong to next month).
+     * - Include salary credits that physically arrived the PREVIOUS month (they belong to THIS month).
+     */
     override fun getReceivedTotal(year: Int, month: Int): Double =
         Realm.getDefaultInstance().use { realm ->
-            realm.where(ParsedTransaction::class.java)
+            // ── This month's credits, minus any end-of-month salary credits ──────────
+            val thisMonthIncome = realm.where(ParsedTransaction::class.java)
                 .equalTo("year", year)
                 .equalTo("month", month)
                 .equalTo("isDebit", false)
                 .findAll()
+                .filterNot { isSalaryCredit(it) }
                 .sumOf { it.amount }
+
+            // ── Previous month's salary credits that count as THIS month's income ───
+            val (prevYear, prevMonth) = if (month == 1) Pair(year - 1, 12) else Pair(year, month - 1)
+            val prevMonthSalary = realm.where(ParsedTransaction::class.java)
+                .equalTo("year", prevYear)
+                .equalTo("month", prevMonth)
+                .equalTo("isDebit", false)
+                .findAll()
+                .filter { isSalaryCredit(it) }
+                .sumOf { it.amount }
+
+            thisMonthIncome + prevMonthSalary
         }
 
-    override fun getAccounts() =
-        Realm.getDefaultInstance()
-            .where(AccountBalance::class.java)
-            .sort("lastUpdated", Sort.DESCENDING)
-            .findAllAsync()
+    override fun getAccounts(): List<AccountBalance> =
+        Realm.getDefaultInstance().use { realm ->
+            realm.copyFromRealm(
+                realm.where(AccountBalance::class.java)
+                    .sort("lastUpdated", Sort.DESCENDING)
+                    .findAll()
+            )
+        }.let { all ->
+            // Deduplicate: same bank + same last-4 = same physical account regardless of sender ID.
+            // We MUST derive the bank name from senderPattern when bankName is blank, because
+            // existing rows have bankName="" (set by Realm migration) and different sender IDs
+            // (JXHDFCBK, ADHDFCBK, VMHDFCBK…) all refer to the same bank.
+            val seen = mutableSetOf<String>()
+            all.filter { acct ->
+                val bankKey = deriveBankName(acct.senderPattern, acct.bankName)
+                seen.add("$bankKey:${acct.accountLast4}")  // true = first time seen
+            }
+        }
+
+    /**
+     * Derives a normalised bank name from the SMS sender-ID pattern.
+     * Falls back to [storedBankName] if already set (for newer entries that went through the parser).
+     * This mapping mirrors [FinanceController.senderToBankName].
+     */
+    private fun deriveBankName(senderPattern: String, storedBankName: String): String {
+        if (storedBankName.isNotBlank()) return storedBankName
+        val s = senderPattern.uppercase()
+        return when {
+            "HDFCBK" in s                    -> "HDFC Bank"
+            "ICICIT" in s                    -> "ICICI Bank"
+            "SBICRD" in s || "SBISMS" in s   -> "SBI"
+            "PNBSMS" in s                    -> "PNB"
+            "BDNSMS" in s                    -> "Bandhan Bank"
+            "AXISBK" in s                    -> "Axis Bank"
+            "YESBNK" in s || "YESBKS" in s   -> "Yes Bank"
+            "PAYTMB" in s || "PPBL"   in s   -> "Paytm Bank"
+            "KOTAKB" in s                    -> "Kotak Bank"
+            "INDUSB" in s                    -> "IndusInd Bank"
+            else                             -> senderPattern   // unknown — keep raw sender
+        }
+    }
 
     override fun getUpcomingBills(): List<ParsedTransaction> {
         val nowMs        = System.currentTimeMillis()
@@ -105,6 +175,7 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
                     accountLast4     = data.accountLast4
                     availableBalance = data.availableBalance
                     method           = data.method
+                    bankName         = data.bankName
                     year             = cal.get(Calendar.YEAR)
                     month            = cal.get(Calendar.MONTH) + 1
                 }
@@ -118,10 +189,18 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
         senderAddress: String,
         accountLast4: String,
         balance: Double,
-        ts: Long
+        ts: Long,
+        bankName: String,
+        accountType: String
     ) {
         if (accountLast4.isBlank()) return
-        val compositeId = "$senderAddress:$accountLast4"
+        // Use bankName as the key prefix so all sender IDs for the same bank+account
+        // update the SAME row instead of creating duplicates.
+        val keyPrefix   = bankName.ifBlank { senderAddress }
+        val compositeId = "$keyPrefix:$accountLast4"
+        val balanceVal    = balance
+        val bankNameVal   = bankName
+        val accountTypeVal = accountType
         Realm.getDefaultInstance().use { realm ->
             realm.executeTransaction { r ->
                 val existing = r.where(AccountBalance::class.java)
@@ -129,11 +208,13 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
                     .findFirst()
                 if (existing != null && existing.lastUpdated >= ts) return@executeTransaction
                 val obj = AccountBalance().apply {
-                    id             = compositeId
-                    senderPattern  = senderAddress
+                    id               = compositeId
+                    senderPattern    = senderAddress     // keep original sender for reference
                     this.accountLast4 = accountLast4
-                    this.balance      = balance
-                    lastUpdated    = ts
+                    this.balance     = balanceVal
+                    this.bankName    = bankNameVal.ifBlank { senderAddress }
+                    this.accountType = accountTypeVal
+                    lastUpdated      = ts
                 }
                 r.copyToRealmOrUpdate(obj)
             }

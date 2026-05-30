@@ -195,8 +195,42 @@ class TransactionParserImpl @Inject constructor() : TransactionParser {
             FLAGS
         )
 
-        // ── TIER 2: GENERIC FALLBACK PATTERNS ───────────────────────────────
+        // ── BANK NAME EXTRACTION ─────────────────────────────────────────────
+        // Ordered by specificity (more specific names first)
+        private val BANK_NAMES = listOf(
+            "HDFC Bank"    to Regex("""HDFC\s*Bank""", RegexOption.IGNORE_CASE),
+            "ICICI Bank"   to Regex("""ICICI\s*Bank""", RegexOption.IGNORE_CASE),
+            "Bandhan Bank" to Regex("""Bandhan\s*Bank""", RegexOption.IGNORE_CASE),
+            "Axis Bank"    to Regex("""Axis\s*Bank""", RegexOption.IGNORE_CASE),
+            "Yes Bank"     to Regex("""Yes\s*Bank|YESBNK""", RegexOption.IGNORE_CASE),
+            "Kotak Bank"   to Regex("""Kotak\s*(Mahindra)?\s*Bank""", RegexOption.IGNORE_CASE),
+            "SBI"          to Regex("""SBI\s+(?:Credit\s+Card|Bank|Cardholder)""", RegexOption.IGNORE_CASE),
+            "PNB"          to Regex("""PNB|Punjab\s+National\s+Bank""", RegexOption.IGNORE_CASE),
+            "Paytm Bank"   to Regex("""Paytm\s*(?:Payments?\s*)?Bank|PPBL""", RegexOption.IGNORE_CASE),
+            "Indian Bank"  to Regex("""Indian\s*Bank""", RegexOption.IGNORE_CASE),
+            "BOB"          to Regex("""Bank\s+of\s+Baroda""", RegexOption.IGNORE_CASE),
+            "Canara Bank"  to Regex("""Canara\s*Bank""", RegexOption.IGNORE_CASE),
+        )
 
+        /** Derives account type from SMS body: "Savings A/C", "Debit Card", or "Credit Card". */
+        fun extractAccountType(body: String, method: String): String {
+            val b = body.uppercase()
+            if (method == "ATM" || b.contains("DEBIT CARD") || b.contains("ATM WITHDRAWAL")) return "Debit Card"
+            if (method == "Card" || method == "Statement"
+                || b.contains("CREDIT CARD") || b.contains("CREDIT LIMIT")
+            ) return "Credit Card"
+            return "Savings A/C"
+        }
+
+        /** Extracts the human-readable bank name from the SMS body. */
+        fun extractBankName(body: String): String {
+            for ((name, regex) in BANK_NAMES) {
+                if (regex.containsMatchIn(body)) return name
+            }
+            return ""
+        }
+
+        // ── TIER 2: GENERIC FALLBACK PATTERNS ───────────────────────────────
         private val GENERIC_AMOUNT    = Regex("""(?:Rs\.?|INR|₹)\s*([\d,]+(?:\.\d{1,2})?)""", RegexOption.IGNORE_CASE)
         private val GENERIC_DEBIT     = Regex("""\b(debited|spent|withdrawn|paid|deducted|sent)\b""", RegexOption.IGNORE_CASE)
         private val GENERIC_CREDIT    = Regex("""\b(credited|deposited|received|refund(?:ed)?)\b""", RegexOption.IGNORE_CASE)
@@ -206,19 +240,25 @@ class TransactionParserImpl @Inject constructor() : TransactionParser {
         private val GENERIC_AVL_BAL   = Regex("""(?:[Aa]vl?\.?\s*[Bb]al(?:ance)?|[Aa]val\s+[Bb]al|Bal)\s*(?:INR|Rs\.?)?\s*([\d,]+(?:\.\d{1,2})?)""")
         private val GENERIC_MERCHANT_AT = Regex("""\bat\s+([A-Z][A-Za-z0-9 &'.\-]{2,40})(?=\s+on\b|\s*\d|\.)""")
         private val GENERIC_MERCHANT_TO = Regex("""\bto\s+([A-Z][A-Za-z0-9 &'.\-]{2,40})(?=\s+UPI|\s+on\b|\s+Ref\b)""")
-    }
+    }  // end companion object
 
     // ── PUBLIC API ───────────────────────────────────────────────────────────
 
     override fun parse(address: String, body: String): ParsedTransactionData? {
         val b = body.trim()
+        val bankName = extractBankName(b)
 
         // Try all structural patterns first (highest precision).
-        return tryS1(b) ?: tryS2(b) ?: tryS3(b) ?: tryS4(b) ?: tryS5(b)
+        val result = tryS1(b) ?: tryS2(b) ?: tryS3(b) ?: tryS4(b) ?: tryS5(b)
             ?: tryS6(b) ?: tryS7(b) ?: tryS8(b) ?: tryS9(b) ?: tryS10(b)
             ?: tryS11(b) ?: tryS12(b) ?: tryS13(b)
             // Fall through to the generic extractor if no structural pattern matched.
             ?: tryGeneric(b)
+
+        return result?.copy(
+            bankName    = bankName.ifEmpty { result.bankName },
+            accountType = extractAccountType(b, result.method)
+        )
     }
 
     // ── TIER 1 DISPATCH FUNCTIONS ────────────────────────────────────────────

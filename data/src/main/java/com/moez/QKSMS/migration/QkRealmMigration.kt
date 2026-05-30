@@ -37,7 +37,7 @@ class QkRealmMigration @Inject constructor(
 ) : RealmMigration {
 
     companion object {
-        const val SCHEMA_VERSION: Long = 17
+        const val SCHEMA_VERSION: Long = 19
     }
 
     @SuppressLint("ApplySharedPref")
@@ -358,6 +358,48 @@ class QkRealmMigration @Inject constructor(
                 .addField("balance",       Double::class.java, FieldAttribute.REQUIRED)
                 .addField("lastUpdated",   Long::class.java,   FieldAttribute.REQUIRED)
 
+            version++
+        }
+
+        // ── Schema v18: Add bankName to ParsedTransaction; add bankName + accountType to AccountBalance ──
+        if (version == 17L) {
+            realm.schema.get("ParsedTransaction")
+                ?.addField("bankName", String::class.java, FieldAttribute.REQUIRED)
+                ?.transform { it.set("bankName", "") }
+
+            realm.schema.get("AccountBalance")
+                ?.addField("bankName",    String::class.java, FieldAttribute.REQUIRED)
+                ?.transform { it.set("bankName", "") }
+                ?.addField("accountType", String::class.java, FieldAttribute.REQUIRED)
+                ?.transform { it.set("accountType", "Savings A/C") }
+
+            version++
+        }
+
+        // ── Schema v19: Backfill AccountBalance.bankName from senderPattern ──────────
+        // v18 added bankName but left it blank (""). This step derives bankName from the
+        // senderPattern field so deduplication in getAccounts() works correctly.
+        if (version == 18L) {
+            realm.schema.get("AccountBalance")?.transform { obj ->
+                val existing = obj.getString("bankName")
+                if (existing.isBlank()) {
+                    val sender = obj.getString("senderPattern").uppercase()
+                    val derived = when {
+                        "HDFCBK" in sender                  -> "HDFC Bank"
+                        "ICICIT" in sender                  -> "ICICI Bank"
+                        "SBICRD" in sender || "SBISMS" in sender -> "SBI"
+                        "PNBSMS" in sender                  -> "PNB"
+                        "BDNSMS" in sender                  -> "Bandhan Bank"
+                        "AXISBK" in sender                  -> "Axis Bank"
+                        "YESBNK" in sender || "YESBKS" in sender -> "Yes Bank"
+                        "PAYTMB" in sender || "PPBL"  in sender  -> "Paytm Bank"
+                        "KOTAKB" in sender                  -> "Kotak Bank"
+                        "INDUSB" in sender                  -> "IndusInd Bank"
+                        else                                -> ""
+                    }
+                    if (derived.isNotBlank()) obj.set("bankName", derived)
+                }
+            }
             version++
         }
 
