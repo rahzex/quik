@@ -78,10 +78,22 @@ open class ParsedTransaction : RealmObject() {
 
     /**
      * Human-readable bank name extracted from the SMS body.
-     * e.g. "HDFC Bank", "SBI", "ICICI Bank", "PNB", "Bandhan Bank".
-     * Empty string if not determined.
+     * e.g. "HDFC Bank", "SBI", "ICICI Bank", "PNB", "Bandhan Bank". Empty if undetermined.
      */
     var bankName: String = ""
+
+    /**
+     * For method=="Statement" bill reminders: epoch-ms of the payment due date.
+     * Used by [FinanceRepository.getUpcomingBills] to filter by actual due date.
+     * 0 = not set / not a bill reminder.
+     */
+    var dueDateMs: Long = 0
+
+    /**
+     * For method=="Statement" bill reminders: the minimum payment amount due.
+     * 0.0 = not specified in the SMS.
+     */
+    var minDue: Double = 0.0
 
     /**
      * Calendar year extracted from [date]. Indexed for fast month-filter queries.

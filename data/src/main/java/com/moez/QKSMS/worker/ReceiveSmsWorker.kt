@@ -168,7 +168,7 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
             }
         }
 
-        // ── Phase 2: Parse financial data from TRANSACTIONS messages ─────────
+        // ── Phase 2: Parse financial data from TRANSACTIONS + BILL_REMINDER messages ─────────
         if (prefs.autoCategorize.get()) {
             val msgCategory = try {
                 MessageCategory.valueOf(
@@ -178,7 +178,7 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
                 )
             } catch (_: Exception) { null }
 
-            if (msgCategory == MessageCategory.TRANSACTIONS) {
+            if (msgCategory == MessageCategory.TRANSACTIONS || msgCategory == MessageCategory.BILL_REMINDER) {
                 transactionParser.parse(message.address, message.body)?.let { data ->
                     financeRepo.saveTransaction(data, message)
                     if (data.availableBalance > 0.0) {

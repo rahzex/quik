@@ -203,7 +203,9 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     private fun setupCategoryTabs() {
-        val categories = MessageCategory.values()
+        // BILL_REMINDER is an internal/auto category that feeds the Finance Upcoming section only.
+        // It must NOT appear as a conversation-list tab.
+        val categories = MessageCategory.values().filter { it != MessageCategory.BILL_REMINDER }
         val accentColor = getColorCompat(R.color.accent) // theme-aware accent (light: #1A56DB, dark: #5B8DEF)
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
         val displayNames = mapOf(
@@ -258,7 +260,8 @@ class MainActivity : QkThemedActivity(), MainView {
     private fun updateActiveCategoryTab(category: MessageCategory) {
         val accentColor = getColorCompat(R.color.accent) // theme-aware accent
         val defaultColor = resolveThemeColor(android.R.attr.textColorSecondary)
-        val index = MessageCategory.values().indexOf(category)
+        // Use the same filtered list as setupCategoryTabs() — BILL_REMINDER excluded.
+        val index = MessageCategory.values().filter { it != MessageCategory.BILL_REMINDER }.indexOf(category)
         activeTabView?.let { prev ->
             prev.setTextColor(defaultColor)
             prev.background = buildTabBackground(false, accentColor)
@@ -272,7 +275,10 @@ class MainActivity : QkThemedActivity(), MainView {
     }
 
     private fun showMoveToCategoryDialog(threadId: Long) {
-        val categories = MessageCategory.values().filter { it != MessageCategory.ALL }
+        // BILL_REMINDER is auto-detected only — exclude from the manual-assignment dialog.
+        val categories = MessageCategory.values().filter {
+            it != MessageCategory.ALL && it != MessageCategory.BILL_REMINDER
+        }
         val labels = categories.map { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }.toTypedArray()
         AlertDialog.Builder(this)
             .setTitle("Move to Category")

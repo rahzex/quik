@@ -79,11 +79,15 @@ class ParseAllTransactionsWorker(
         Timber.d("ParseAllTransactionsWorker: started")
 
         Realm.getDefaultInstance().use { realm ->
-            // Find all TRANSACTIONS messages that have NOT yet been parsed.
+            // Find all TRANSACTIONS + BILL_REMINDER messages that have NOT yet been parsed.
             // "Not yet parsed" = no corresponding ParsedTransaction row exists.
             val allTxnMessages = realm
                 .where(Message::class.java)
-                .equalTo("categoryId", "TRANSACTIONS")
+                .beginGroup()
+                    .equalTo("categoryId", "TRANSACTIONS")
+                    .or()
+                    .equalTo("categoryId", "BILL_REMINDER")
+                .endGroup()
                 .sort("date", Sort.DESCENDING)
                 .findAll()
 
@@ -118,6 +122,8 @@ class ParseAllTransactionsWorker(
                     availableBalance = data.availableBalance
                     method           = data.method
                     bankName         = data.bankName
+                    dueDateMs        = data.dueDateMs
+                    minDue           = data.minDue
                     year             = cal.get(java.util.Calendar.YEAR)
                     month            = cal.get(java.util.Calendar.MONTH) + 1
                 }

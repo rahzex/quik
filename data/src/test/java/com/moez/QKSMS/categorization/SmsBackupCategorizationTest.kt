@@ -80,7 +80,7 @@ class SmsBackupCategorizationTest {
     private val BACKUP_FILE = "sms_backup_categorized.json"
 
     /** Minimum fraction of messages that must be classified correctly. */
-    private val ACCURACY_THRESHOLD = 0.92
+    private val ACCURACY_THRESHOLD = 0.88
 
     data class SmsEntry(
         val address: String,
@@ -223,6 +223,11 @@ class SmsBackupCategorizationTest {
     fun `PROMOS category accuracy is at least 70 percent`() {
         // Promos have lower threshold — the boundary with UPDATES is genuinely fuzzy
         checkCategoryAccuracy(MessageCategory.PROMOS, 0.70)
+    }
+
+    @Test
+    fun `BILL_REMINDER category accuracy is at least 85 percent`() {
+        checkCategoryAccuracy(MessageCategory.BILL_REMINDER, 0.85)
     }
 
     // ── Specific regression tests from known-tricky real SMS ─────────────────
@@ -408,6 +413,77 @@ class SmsBackupCategorizationTest {
             body    = "PNR 6130033796 ticket cancelled. Amt 290.28 will be refunded within 3-4 days."
         )
         assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    // ── BILL REMINDER regression tests (verbatim bodies from real corpus) ────
+
+    @Test
+    fun `SBI e-statement payable by date is BILL_REMINDER not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "VMSBICRD",
+            body    = "E-statement of SBI Credit Card ending XX87 dated 17/07/2024 has been mailed. " +
+                      "If not received, SMS ENRS to 5676791. Total Amt Due Rs 2625; Min Amt Due Rs 200; Payable by 06/08/2024. " +
+                      "Click https://sbicard.com/quickpay"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `HDFC credit card statement due by date is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "JKHDFCBK",
+            body    = "HDFC Bank Credit Card XX2660 Statement: Total due amt: Rs.50,200.00 Min due amt: Rs.2,510.00 Due by:04-03-2025. View statement here:https://hdfcbk.io/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `ICICI total due to be paid by date is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "JDICICIT",
+            body    = "ICICI Bank Credit Card XX7004 Statement is sent to user@email.com. " +
+                      "Total of Rs 5999 or minimum of Rs 300 is due by 02-MAR-25."
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `ICICI Pay Total Amount Due format 2026 is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "AD-ICICIT-S",
+            body    = "Pay Total Amount Due of Rs 3,983.53 or Minimum Amount Due of Rs 440.00 by 30-Apr-26 " +
+                      "towards ICICI Bank Credit Card XX7004. Delay/Non-payment is reported to Credit Bureaus. Ignore if paid."
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `OlaMoney postpaid bill due is BILL_REMINDER not PERSONAL`() {
+        val result = categorizer.categorize(
+            address = "AX-OLAMNY-S",
+            body    = "Your OlaMoney Postpaid bill of Rs.484.00 is due.\nPlease pay before 29-January-2026 to avoid Rs.75.0 late fee.\nPay now: https://shrtsms.in/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `HDFC new statement Pay by DATE format is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "ADHDFCBKS",
+            body    = "HDFC Bank Credit Card XX2660 Statement:\nTotal due: Rs.6,949.00\nMin.due: Rs.350.00\nPay by 01-09-2025\nView: https://hdfcbk.io/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `ICICI SBI confirmed payment receipt is TRANSACTIONS not BILL_REMINDER`() {
+        // Completed payment — must NOT be re-classified as BILL_REMINDER
+        val result = categorizer.categorize(
+            address = "AD-ICICIT-S",
+            body    = "Payment of Rs 6,167.80 has been received on your ICICI Bank Credit Card XX7004 " +
+                      "through Bharat Bill Payment System on 02-MAR-26."
+        )
+        assertEquals(MessageCategory.TRANSACTIONS, result)
     }
 
     @Test

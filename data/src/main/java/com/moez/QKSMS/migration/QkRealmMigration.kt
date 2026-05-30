@@ -37,7 +37,7 @@ class QkRealmMigration @Inject constructor(
 ) : RealmMigration {
 
     companion object {
-        const val SCHEMA_VERSION: Long = 19
+        const val SCHEMA_VERSION: Long = 20
     }
 
     @SuppressLint("ApplySharedPref")
@@ -400,6 +400,17 @@ class QkRealmMigration @Inject constructor(
                     if (derived.isNotBlank()) obj.set("bankName", derived)
                 }
             }
+            version++
+        }
+
+        // ── Schema v20: Add dueDateMs + minDue to ParsedTransaction ─────────────────
+        // Required for bill reminder filtering by actual payment due date.
+        if (version == 19L) {
+            realm.schema.get("ParsedTransaction")
+                ?.addField("dueDateMs", Long::class.java,   FieldAttribute.REQUIRED)
+                ?.transform { it.setLong("dueDateMs", 0L) }
+                ?.addField("minDue",    Double::class.java, FieldAttribute.REQUIRED)
+                ?.transform { it.setDouble("minDue", 0.0) }
             version++
         }
 

@@ -35,6 +35,8 @@ package dev.octoshrimpy.quik.categorization
  *                         "Card", "Statement", or "Other".
  * @param bankName         Human-readable bank name extracted from SMS body ("HDFC Bank", "SBI", etc.)
  * @param accountType      "Savings A/C", "Debit Card", or "Credit Card"
+ * @param dueDateMs        For bill reminders (method="Statement"): epoch-ms of the payment due date. 0 otherwise.
+ * @param minDue           For bill reminders: minimum amount due. 0.0 if not specified.
  */
 data class ParsedTransactionData(
     val amount: Double,
@@ -45,7 +47,9 @@ data class ParsedTransactionData(
     val availableBalance: Double = -1.0,
     val method: String = "Other",
     val bankName: String = "",
-    val accountType: String = "Savings A/C"
+    val accountType: String = "Savings A/C",
+    val dueDateMs: Long = 0,
+    val minDue: Double = 0.0
 )
 
 /**

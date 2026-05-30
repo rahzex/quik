@@ -75,6 +75,28 @@ enum class MessageCategory {
     PROMOS,
 
     /** Likely unsolicited or fraudulent messages (prize scams, loan offers, etc.). */
-    SPAM
+    SPAM,
+
+    /**
+     * Bill due reminders and upcoming payment notices.
+     *
+     * Examples:
+     *  - Credit card statements: "Total Amt Due Rs 5790; Min Amt Due Rs 290; Payable by 08/03/2024"
+     *  - HDFC statement:         "Total due amt: Rs.1,18,546 ... Due by:02-12-2024"
+     *  - ICICI reminder:         "Total of Rs 65489 or minimum of Rs 3280 is due by 30-APR-24"
+     *  - ICICI nudge:            "Pay Total Due of Rs X or Min Due Rs Y by DATE"
+     *  - SBI outstanding:        "outstanding of Rs. 43295 on your credit card is due on 06-APR-25"
+     *  - OlaMoney postpaid:      "Your OlaMoney Postpaid bill of Rs. 699 is due. Pay before DATE"
+     *  - HDFC "Amt Due" nudge:   "Amt Due Rs.X on HDFC Bank Card, Pay with PayZapp"
+     *
+     * Key distinction from TRANSACTIONS: these messages announce money *owed in the
+     * future* — not a payment that already happened. Detecting them separately allows
+     * the UI to show an "Upcoming" / "Bills" section.
+     *
+     * Detection priority: checked AFTER OTP and known UPDATE senders (Tata Play etc.)
+     * but BEFORE generic transaction heuristics, so "Min Due" / "Total Due" keywords
+     * are not swallowed by TXN_BODY_KEYWORDS.
+     */
+    BILL_REMINDER
 }
 

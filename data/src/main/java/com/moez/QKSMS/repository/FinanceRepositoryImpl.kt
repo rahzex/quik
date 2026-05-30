@@ -146,15 +146,32 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
     }
 
     override fun getUpcomingBills(): List<ParsedTransaction> {
-        val nowMs        = System.currentTimeMillis()
-        val thirtyDaysMs = 30L * 24 * 60 * 60 * 1000
+        val nowMs         = System.currentTimeMillis()
+        // Show bills whose due date is in the future OR within the last 7 days (recently due).
+        // For bill reminders without a parsed due date (dueDateMs=0), fall back to SMS received
+        // date within the last 30 days so they still surface in the Upcoming section.
+        val sevenDaysMs   = 7L  * 24 * 60 * 60 * 1000
+        val thirtyDaysMs  = 30L * 24 * 60 * 60 * 1000
+        val ninetyDaysMs  = 90L * 24 * 60 * 60 * 1000
         return Realm.getDefaultInstance().use { realm ->
             realm.copyFromRealm(
                 realm.where(ParsedTransaction::class.java)
                     .equalTo("method", "Statement")
-                    .greaterThanOrEqualTo("date", nowMs)
-                    .lessThanOrEqualTo("date", nowMs + thirtyDaysMs)
-                    .sort("date", Sort.ASCENDING)
+                    .beginGroup()
+                        // Has a parsed due date and it's within [-7 days, +90 days]
+                        .beginGroup()
+                            .greaterThan("dueDateMs", 0L)
+                            .greaterThanOrEqualTo("dueDateMs", nowMs - sevenDaysMs)
+                            .lessThanOrEqualTo("dueDateMs", nowMs + ninetyDaysMs)
+                        .endGroup()
+                        .or()
+                        // No due date parsed — show if received in the last 30 days
+                        .beginGroup()
+                            .equalTo("dueDateMs", 0L)
+                            .greaterThanOrEqualTo("date", nowMs - thirtyDaysMs)
+                        .endGroup()
+                    .endGroup()
+                    .sort("dueDateMs", Sort.ASCENDING)
                     .findAll()
             )
         }
@@ -176,6 +193,8 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
                     availableBalance = data.availableBalance
                     method           = data.method
                     bankName         = data.bankName
+                    dueDateMs        = data.dueDateMs
+                    minDue           = data.minDue
                     year             = cal.get(Calendar.YEAR)
                     month            = cal.get(Calendar.MONTH) + 1
                 }

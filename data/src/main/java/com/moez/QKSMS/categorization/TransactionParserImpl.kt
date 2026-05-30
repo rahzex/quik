@@ -175,20 +175,90 @@ class TransactionParserImpl @Inject constructor() : TransactionParser {
         )
 
         /**
-         * S12 — Credit card bill statement: "Total Amt Due … Payable by {date}".
-         * Corpus: "E-statement … Total Amt Due Rs 5790; Min Amt Due Rs 290; Payable by 08/03/2024"
-         * Captures: (1)=totalDue  (2)=dueDate (stored in [reference])
+         * S12 — Credit card bill statement / reminder.
+         * Covers 6 bank-specific patterns (SBI, HDFC, ICICI) identified from corpus.
+         * Due date is stored in [ParsedTransactionData.dueDateMs]; min due in [ParsedTransactionData.minDue].
+         * See [tryS12] for the full multi-pattern implementation.
          */
-        private val S12_BILL_STATEMENT = Regex(
-            """Total\s+Amt\s+Due\s+(?:Rs\.?|INR|₹)\s*([\d,.]+).*?Payable\s+by\s+([\d/]+)""",
+        // SBI E-statement: "Total Amt Due Rs 5790; Min Amt Due Rs 290; Payable by 08/03/2024"
+        private val S12a_SBI_ESTATE = Regex(
+            """Total\s+Amt\s+Due\s+Rs\s*([\d,]+);\s*Min\s+Amt\s+Due\s+Rs\s*([\d,]+).*?Payable\s+by\s+([\d/]+)""",
+            FLAGS
+        )
+        // HDFC Statement: "Total due amt: Rs.1,18,546.00 Min due amt: Rs.5,930.00 Due by:02-12-2024"
+        private val S12b_HDFC_STMT = Regex(
+            """HDFC Bank Credit Card\s+XX(\d{4})\s+Statement:.*?Total due amt:\s*Rs\.([\d,.\-]+)\s+Min due amt:\s*Rs\.([\d,.]+)\s+Due by:([\d\-\w]+)""",
+            FLAGS
+        )
+        // ICICI Statement: "Total of Rs 65489.68 or minimum of Rs 3280 is due by 30-APR-24"
+        private val S12c_ICICI_STMT = Regex(
+            """ICICI Bank Credit Card\s+XX(\d{4})\s+Statement.*?Total of\s+Rs\s*([\d,.]+)\s+or\s+minimum\s+of\s+Rs\s*([\d,.]+)\s+is due by\s+([\d\w\-]+)""",
+            FLAGS
+        )
+        // ICICI Due reminder variant a: "Total Due INR X & Min Due INR Y to be paid by DATE on ICICI Bank Credit Card XXNNNN"
+        private val S12d_ICICI_TOTALDUE = Regex(
+            """Total\s+Due\s+(?:INR|Rs\.?)\s*([\d,.]+)\s+[&]\s+Min\s+Due\s+(?:INR|Rs\.?)\s*([\d,.]+)\s+to be paid by\s+([\d\w\-]+)\s+on\s+ICICI Bank Credit Card\s+XX(\d{4})""",
+            FLAGS
+        )
+        // ICICI Due reminder variant b/c: "(Kindly pay|Pay) total due of Rs X or (Min|Minimum) Due Rs Y by DATE (on|for) ICICI..."
+        private val S12e_ICICI_KINDLYPAY = Regex(
+            """(?:Kindly pay|Pay)\s+[Tt]otal [Dd]ue of\s+Rs\s*([\d,.]+)\s+or\s+(?:Min(?:imum)?)\s+Due\s+Rs\s*([\d,.]+)\s+by\s+([\d\w\-]+)\s+(?:on|for)\s+ICICI Bank Credit Card\s+XX(\d{4})""",
+            FLAGS
+        )
+        // SBI Outstanding: "outstanding of Rs. 43295.00, on your credit card ending 8987 is due on 06-APR-25. Min. Amount Due: Rs. 2724.00"
+        private val S12f_SBI_OUTSTANDING = Regex(
+            """outstanding of Rs\.\s*([\d,.]+),?\s+on your credit card ending\s+(\d{4})\s+is due on\s+([\d\w\-]+).*?Min\.\s+Amount Due:\s+Rs\.\s*([\d,.]+)""",
+            FLAGS
+        )
+        // ICICI Standing Instruction: "Payment of INR 337.25 towards Merchant Amazon ... ICICI Bank Credit Card 7004... is due by 19/03/2026"
+        private val S12g_ICICI_SI = Regex(
+            """Payment of\s+(?:INR|Rs\.?)\s*([\d,.]+)\s+towards\s+Merchant\s+(\w+).*?ICICI Bank Credit Card\s+(\d{4}).*?is due by\s+([\d/\-\w]+)""",
+            FLAGS
+        )
+
+        /**
+         * S12h — HDFC new multi-line statement format.
+         * Corpus: "HDFC Bank Credit Card XX2660 Statement:\nTotal due: Rs.1,630.00\nMin.due: Rs.200.00\nPay by 02-10-2025"
+         * Captures: (1)=cardLast4  (2)=totalAmount  (3)=dueDate
+         */
+        private val S12h_HDFC_NEW = Regex(
+            """HDFC Bank Credit Card\s+XX(\d{4})\s+Statement:.*?Total due:\s*Rs\.([\d,.\-]+).*?Pay by\s+([\d/\-\w]+)""",
+            FLAGS
+        )
+
+        /**
+         * S12i — HDFC "Amount Due\n Rs.X … Pay instantly by DATE".
+         * Corpus: "Amount Due\nRs.125017 on HDFC Bank Credit Card 2660. Pay instantly by 01/APR/2026"
+         * Captures: (1)=amount  (2)=dueDate
+         */
+        private val S12i_HDFC_AMTDUE = Regex(
+            """Amount\s+Due\s*[\n\r]+(?:Rs\.?|INR|₹)\s*([\d,.\-]+)\s+on\s+HDFC.*?(?:[Pp]ay\s+instantly\s+by|by)\s+([\d/\-\w]+)""",
+            FLAGS
+        )
+
+        /**
+         * S12j — ICICI "Pay Total Amount Due of Rs X or Minimum Amount Due of Rs Y by DATE towards ICICI … XXNNNN".
+         * Corpus (2026 format): "Pay Total Amount Due of Rs 6,167.80 or Minimum Amount Due of Rs 350.00 by 02-Mar-26 towards ICICI Bank Credit Card XX7004"
+         * Captures: (1)=totalAmount  (2)=dueDate  (3)=cardLast4
+         */
+        private val S12j_ICICI_NEW = Regex(
+            """Pay\s+Total\s+Amount\s+Due\s+of\s+(?:Rs\.?|INR|₹)\s*([\d,.]+).{0,100}?by\s+([\d/\-\w]+)\s+towards\s+ICICI Bank Credit Card\s+XX(\d{4})""",
+            FLAGS
+        )
+
+        /**
+         * S12k — Generic "Amt Due Rs.X on … Credit Card / Card X{last4}" nudge (no date).
+         * Corpus: "Amt Due Rs.118546 on HDFC Bank Card X2660? Pay with PayZapp"
+         *         "Amt Due: Rs 822 on HDFC Bank Credit Card 2660"
+         * Captures: (1)=amount  (2)=cardLast4
+         */
+        private val S12k_AMT_DUE_NUDGE = Regex(
+            """(?:Amt|Amount)\s+Due\s*[:\s]+(?:Rs\.?|INR|₹)\s*([\d,.\-]+)\s+on\b.*?(?:Credit\s+Card|Card)\s+(?:X{1,4})?(\d{4})""",
             FLAGS
         )
 
         /**
          * S13 — "has requested money/payment … will be debited / a payment of …" (UPI collect request).
-         * Corpus A: "Amazon Pay Groceries has requested money on Paytm. On approving, Rs.693 will be debited"
-         * Corpus B: "Payment requested: Khadi Natural has requested a payment of INR 219.43 on Gokwik"
-         * Captures: (1)=merchant  (2)=amount (group 2 or 3)
          */
         private val S13_COLLECT_REQUEST = Regex(
             """([\w\s&'.,-]+?)\s+has\s+requested\s+(?:money\b.*?On\s+approving,\s+$AMT\s+will\s+be\s+debited|a\s+payment\s+of\s+(?:INR|Rs\.?|₹)\s*([\d,.]+))""",
@@ -400,13 +470,90 @@ class TransactionParserImpl @Inject constructor() : TransactionParser {
     }
 
     private fun tryS12(body: String): ParsedTransactionData? {
-        val m = S12_BILL_STATEMENT.find(body) ?: return null
-        return ParsedTransactionData(
-            amount    = parseAmount(m.groupValues[1]) ?: return null,
-            isDebit   = true,  // bill = money owed (treat as debit for dashboard)
-            reference = m.groupValues[2], // due date stored in reference field
-            method    = "Statement"
-        )
+        // S12a: SBI "Total Amt Due Rs X; Min Amt Due Rs Y; Payable by DATE"
+        S12a_SBI_ESTATE.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[2]) ?: 0.0
+            val dateStr = m.groupValues[3]
+            return ParsedTransactionData(amount = amt, isDebit = true, reference = dateStr,
+                method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12b: HDFC "HDFC Bank Credit Card XX{last4} Statement: Total due amt: Rs.X … Due by:DATE"
+        S12b_HDFC_STMT.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[2]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[3]) ?: 0.0
+            val dateStr = m.groupValues[4]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[1],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12h: HDFC new "HDFC Bank Credit Card XX{last4} Statement:\nTotal due: Rs.X … Pay by DATE"
+        S12h_HDFC_NEW.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[2]) ?: return@let
+            val dateStr = m.groupValues[3]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[1],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr))
+        }
+        // S12c: ICICI "Total of Rs X or minimum of Rs Y is due by DATE"
+        S12c_ICICI_STMT.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[2]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[3]) ?: 0.0
+            val dateStr = m.groupValues[4]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[1],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12d: ICICI "Total Due INR X & Min Due INR Y to be paid by DATE on ICICI Bank Credit Card XXNNNN"
+        S12d_ICICI_TOTALDUE.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[2]) ?: 0.0
+            val dateStr = m.groupValues[3]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[4],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12e: ICICI "(Kindly pay|Pay) total due of Rs X … by DATE on ICICI Bank Credit Card XXNNNN"
+        S12e_ICICI_KINDLYPAY.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[2]) ?: 0.0
+            val dateStr = m.groupValues[3]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[4],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12j: ICICI 2026 "Pay Total Amount Due of Rs X … by DATE towards ICICI … XXNNNN"
+        S12j_ICICI_NEW.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val dateStr = m.groupValues[2]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[3],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr))
+        }
+        // S12f: SBI "outstanding of Rs. X on your credit card ending NNNN is due on DATE"
+        S12f_SBI_OUTSTANDING.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val minAmt = parseAmount(m.groupValues[4]) ?: 0.0
+            val dateStr = m.groupValues[3]
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[2],
+                reference = dateStr, method = "Statement", dueDateMs = parseDueDateMs(dateStr), minDue = minAmt)
+        }
+        // S12g: ICICI SI "Payment of INR X towards Merchant Y … ICICI Bank Credit Card NNNN … is due by DATE"
+        S12g_ICICI_SI.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val dateStr = m.groupValues[4]
+            return ParsedTransactionData(amount = amt, isDebit = true, merchant = m.groupValues[2],
+                accountLast4 = m.groupValues[3], reference = dateStr,
+                method = "Statement", dueDateMs = parseDueDateMs(dateStr))
+        }
+        // S12i: HDFC "Amount Due\nRs.X on HDFC … Pay instantly by DATE"
+        S12i_HDFC_AMTDUE.find(body)?.let { m ->
+            val amt    = parseAmount(m.groupValues[1]) ?: return@let
+            val dateStr = m.groupValues[2]
+            return ParsedTransactionData(amount = amt, isDebit = true, reference = dateStr,
+                method = "Statement", dueDateMs = parseDueDateMs(dateStr))
+        }
+        // S12k: generic "Amt Due Rs.X on … Credit Card XNNNN" (nudge, no date)
+        S12k_AMT_DUE_NUDGE.find(body)?.let { m ->
+            val amt = parseAmount(m.groupValues[1]) ?: return@let
+            return ParsedTransactionData(amount = amt, isDebit = true, accountLast4 = m.groupValues[2],
+                method = "Statement")
+        }
+        return null
     }
 
     private fun tryS13(body: String): ParsedTransactionData? {
@@ -476,6 +623,62 @@ class TransactionParserImpl @Inject constructor() : TransactionParser {
     private fun parseAmount(raw: String): Double? {
         if (raw.isBlank()) return null
         return raw.replace(",", "").trim().toDoubleOrNull()
+    }
+
+    /**
+     * Parses an Indian-bank due-date string into epoch milliseconds (IST).
+     *
+     * Handles the formats found across real bank SMS corpora:
+     *  - "08/03/2024"   → DD/MM/YYYY
+     *  - "02-12-2024"   → DD-MM-YYYY
+     *  - "30-APR-24"    → DD-MMM-YY  (2-digit year → 2000+yy)
+     *  - "06-APR-2025"  → DD-MMM-YYYY
+     *  - "01/APR/2026"  → DD/MMM/YYYY
+     *
+     * Returns 0L if the string cannot be parsed (treated as "no due date").
+     */
+    private fun parseDueDateMs(raw: String): Long {
+        if (raw.isBlank()) return 0L
+        val s = raw.trim().uppercase()
+
+        val months = mapOf(
+            "JAN" to 1,  "FEB" to 2,  "MAR" to 3,  "APR" to 4,
+            "MAY" to 5,  "JUN" to 6,  "JUL" to 7,  "AUG" to 8,
+            "SEP" to 9,  "OCT" to 10, "NOV" to 11, "DEC" to 12
+        )
+
+        // DD-MMM-YY / DD-MMM-YYYY / DD/MMM/YYYY  (e.g. "30-APR-24", "01/APR/2026")
+        val alphaMonth = Regex("""^(\d{1,2})[/\-]([A-Z]{3})[/\-](\d{2,4})$""").matchEntire(s)
+        if (alphaMonth != null) {
+            val day   = alphaMonth.groupValues[1].toIntOrNull() ?: return 0L
+            val mon   = months[alphaMonth.groupValues[2]] ?: return 0L
+            val rawYr = alphaMonth.groupValues[3].toIntOrNull() ?: return 0L
+            val year  = if (rawYr < 100) 2000 + rawYr else rawYr
+            return toEpochMs(year, mon, day)
+        }
+
+        // DD/MM/YYYY or DD-MM-YYYY  (e.g. "08/03/2024", "02-12-2024")
+        val numericDate = Regex("""^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})$""").matchEntire(s)
+        if (numericDate != null) {
+            val day   = numericDate.groupValues[1].toIntOrNull() ?: return 0L
+            val mon   = numericDate.groupValues[2].toIntOrNull() ?: return 0L
+            val rawYr = numericDate.groupValues[3].toIntOrNull() ?: return 0L
+            val year  = if (rawYr < 100) 2000 + rawYr else rawYr
+            return toEpochMs(year, mon, day)
+        }
+
+        return 0L
+    }
+
+    private fun toEpochMs(year: Int, month: Int, day: Int): Long {
+        return try {
+            val cal = java.util.Calendar.getInstance(
+                java.util.TimeZone.getTimeZone("Asia/Kolkata")
+            )
+            cal.set(year, month - 1, day, 0, 0, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            cal.timeInMillis
+        } catch (_: Exception) { 0L }
     }
 }
 

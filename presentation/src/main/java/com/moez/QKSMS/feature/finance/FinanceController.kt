@@ -210,7 +210,19 @@ class FinanceController : QkController<
                     .apply { maximumFractionDigits = 0 }
                 itemView.findViewById<TextView>(R.id.reminderTitle).text  =
                     item.merchant.ifBlank { "Credit card bill" }
-                itemView.findViewById<TextView>(R.id.reminderMeta).text   = "Due ${item.reference}"
+
+                // Prefer the parsed due date epoch; fall back to the raw reference string
+                val dueLabel = if (item.dueDateMs > 0) {
+                    val cal = Calendar.getInstance()
+                    cal.timeInMillis = item.dueDateMs
+                    val day   = cal.get(Calendar.DAY_OF_MONTH)
+                    val month = arrayOf("Jan","Feb","Mar","Apr","May","Jun",
+                        "Jul","Aug","Sep","Oct","Nov","Dec")[cal.get(Calendar.MONTH)]
+                    "$day $month"
+                } else {
+                    item.reference.ifBlank { "—" }
+                }
+                itemView.findViewById<TextView>(R.id.reminderMeta).text   = "Due $dueLabel"
                 itemView.findViewById<TextView>(R.id.reminderAmount).text = fmt.format(item.amount)
             }
         }

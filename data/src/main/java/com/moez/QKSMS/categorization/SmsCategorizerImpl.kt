@@ -242,6 +242,60 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
             RegexOption.IGNORE_CASE
         )
 
+        // ── BILL REMINDER PATTERNS ───────────────────────────────────────────
+        //
+        // Covers bill reminders from ALL issuers — no bank names in any regex.
+        // Signal: message announces money OWED in the future (due date / payable by).
+        //
+        // Corpus-validated patterns (derived from real SBI/HDFC/ICICI/OlaMoney SMSes):
+        //   SBI:       "Total Amt Due Rs X; Min Amt Due Rs Y; Payable by DATE"
+        //   HDFC old:  "Total due amt: Rs.X  Min due amt: Rs.Y  Due by:DATE"
+        //   HDFC new:  "Total due: Rs.X  Min.due: Rs.Y  Pay by DATE"
+        //   HDFC nudge:"Amount Due\nRs.X on HDFC … Pay instantly by DATE"
+        //   HDFC nudge:"Amt Due Rs.X on … Card"  (no explicit date — amount-due notice)
+        //   ICICI:     "Total of Rs X or minimum of Rs Y is due by DATE"
+        //   ICICI:     "Pay Total Due of Rs X or Min Due Rs Y by DATE"
+        //   ICICI:     "Pay Total Amount Due of Rs X or Minimum Amount Due of Rs Y by DATE"
+        //   ICICI SI:  "Payment of INR X towards Merchant Y … is due by DATE"
+        //   SBI:       "outstanding of Rs. X on your credit card ending N is due on DATE"
+        //   OlaMoney:  "bill of Rs. X is due. Please pay before DATE to avoid late fee"
+        //   Generic:   any "is due by DATE", "to be paid by DATE", "payable by DATE"
+
+        /**
+         * Strong bill reminder keywords — bank/issuer agnostic.
+         * Any of these phrases in the body, combined with a currency amount and the
+         * absence of a past-tense completion marker, signals a BILL_REMINDER.
+         */
+        private val BILL_REMINDER_STRONG = Regex(
+            """\b(?:""" +
+            """total\s+(?:amt\s+)?due\b|""" +                  // "Total Amt Due" / "Total due"
+            """min(?:imum)?\s+(?:amt\s+)?due\b|""" +           // "Min Amt Due" / "Minimum Due"
+            """payable\s+by\s+\d|""" +                         // "Payable by 08/03/2024"
+            """outstanding\s+of\s+(?:Rs|INR|₹)|""" +           // "outstanding of Rs. 43295"
+            """is\s+due\s+(?:by|on)\s+\d|""" +                 // "is due by 30-APR" / "is due on 06-APR"
+            """to\s+be\s+paid\s+by\s+\d|""" +                  // "to be paid by 30-Apr"
+            """pay\s+by\s+\d{2}[-/]|""" +                      // "Pay by 01-04-2026" (HDFC new format)
+            """pay\s+instantly\s+by\s+\d|""" +                  // "Pay instantly by 04/MAR/2026"
+            """pay\s+total\s+(?:amount\s+)?due\b|""" +          // "Pay Total Due" / "Pay Total Amount Due"
+            """bill\s+(?:of\s+(?:Rs|INR|₹).{0,40}?)?\bis\s+due\b|""" +  // "bill of Rs.X is due"
+            """amt\s+due\s*(?:Rs|INR|₹|:)|""" +                // "Amt Due Rs.X" / "Amt Due:"
+            """amount\s+due\s*[\n\r]|""" +                     // "Amount Due\n" (HDFC multi-line)
+            """payment\s+of\s+(?:Rs|INR|₹).{0,80}?is\s+due\s+by""" + // "Payment of Rs X … is due by DATE"
+            """)""",
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+        )
+
+        /**
+         * Guards against already-completed payments being mis-classified as bill reminders.
+         * If these past-tense markers are present, the message is a TRANSACTION confirmation,
+         * not an upcoming bill notice — even if it also contains "due" language.
+         */
+        private val BILL_ALREADY_PAID = Regex(
+            """\b(?:has\s+been\s+received|payment\s+received|debited|withdrawn|spent""" +
+            """|credited\s+to\s+ICICI|received\s+on\s+your\s+ICICI)\b""",
+            RegexOption.IGNORE_CASE
+        )
+
         // ── PROMOTIONAL PATTERNS ──────────────────────────────────────────────
 
         /** Body keywords for promotional/marketing messages. */
@@ -282,6 +336,9 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
         val addr = address.trim()
         val bodyTrimmed = body.trim()
 
+        // Pre-compute amount presence — used by both BILL_REMINDER and TRANSACTIONS checks.
+        val hasAmount = AMOUNT_PATTERN.containsMatchIn(bodyTrimmed)
+
         // ── 1. OTP (highest priority) ──────────────────────────────────────
         if (ICICI_OTP_SENDER.containsMatchIn(addr)) return MessageCategory.OTP
         if (OTP_KEYWORD_FIRST.containsMatchIn(bodyTrimmed) ||
@@ -301,10 +358,19 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
         // Paytm notification senders (login alerts etc.)
         if (PAYTM_NOTIF_SENDER.containsMatchIn(addr)) return MessageCategory.UPDATES
 
-        // ── 3. Transactions ────────────────────────────────────────────────
+        // ── 3. Bill Reminders — BEFORE generic transaction check ──────────
+        // Bill reminders come from bank/service senders but announce money OWED
+        // in the future (credit card due, EMI, postpaid bill). They must be checked
+        // before step 4 because "emi" / "min due" are also in TXN_BODY_KEYWORDS.
+        // Guard: past-tense completion markers (debited, received) → still TRANSACTIONS.
+        if (BILL_REMINDER_STRONG.containsMatchIn(bodyTrimmed) && hasAmount
+            && !BILL_ALREADY_PAID.containsMatchIn(bodyTrimmed)) {
+            return MessageCategory.BILL_REMINDER
+        }
+
+        // ── 4. Transactions ────────────────────────────────────────────────
         val isBankSender    = BANK_SENDER_ID.containsMatchIn(addr)
         val isPaymentSender = PAYMENT_SENDER_ID.containsMatchIn(addr)
-        val hasAmount       = AMOUNT_PATTERN.containsMatchIn(bodyTrimmed)
         val hasTxnKeyword   = TXN_BODY_KEYWORDS.containsMatchIn(bodyTrimmed)
 
         // HDFC notification senders → UPDATES (unless body is a real UPI transfer)
@@ -329,23 +395,23 @@ class SmsCategorizerImpl @Inject constructor() : SmsCategorizer {
         if (hasAmount && hasTxnKeyword) return MessageCategory.TRANSACTIONS
         if (GENERIC_BANK_SENDER.containsMatchIn(addr) && hasAmount) return MessageCategory.TRANSACTIONS
 
-        // ── 4. Promotions ──────────────────────────────────────────────────
+        // ── 5. Promotions ──────────────────────────────────────────────────
         if (PROMO_SENDER.containsMatchIn(addr) || PROMO_BODY_KEYWORDS.containsMatchIn(bodyTrimmed))
             return MessageCategory.PROMOS
 
-        // ── 5. Service Updates (body keywords) ────────────────────────────
+        // ── 6. Service Updates (body keywords) ────────────────────────────
         if (UPDATE_BODY_KEYWORDS.containsMatchIn(bodyTrimmed)) return MessageCategory.UPDATES
 
-        // ── 6. Spam ────────────────────────────────────────────────────────
+        // ── 7. Spam ────────────────────────────────────────────────────────
         if (SPAM_BODY_KEYWORDS.containsMatchIn(bodyTrimmed)) return MessageCategory.SPAM
 
-        // ── 7. Personal — only real phone numbers ─────────────────────────
+        // ── 8. Personal — only real phone numbers ─────────────────────────
         // Alphanumeric sender IDs that reached here didn't match any known pattern.
         // Keep them in ALL (visible only in the All tab) rather than mis-labelling
         // them as personal conversations.
         if (PHONE_NUMBER.matches(addr)) return MessageCategory.PERSONAL
 
-        // ── 8. Default: ALL ───────────────────────────────────────────────
+        // ── 9. Default: ALL ───────────────────────────────────────────────
         // Unknown alphanumeric sender — show in All tab only.
         return MessageCategory.ALL
     }
