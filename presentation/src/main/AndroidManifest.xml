@@ -183,6 +183,7 @@
             </intent-filter>
         </receiver>
         <receiver android:name=".receiver.ResendMessageReceiver" />
+        <receiver android:name=".receiver.CopyOtpReceiver" />
         <receiver
             android:name=".feature.widget.WidgetSpeakUnseenProvider"
             android:label="@string/speak_unseen_messages"

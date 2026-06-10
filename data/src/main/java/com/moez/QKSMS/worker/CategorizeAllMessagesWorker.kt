@@ -68,28 +68,40 @@ class CategorizeAllMessagesWorker(
         private const val WORKER_TAG = "categorize_all_messages_v3"
 
         /**
-         * Enqueues this worker as a one-time background job.
-         * Call this from [QKApplication] on first launch.
+         * Enqueues this worker as a one-time background job, chained with
+         * [ParseAllTransactionsWorker] so that transaction parsing ALWAYS runs
+         * after categorisation finishes.
          *
-         * OneTimeWorkRequestBuilder<T> creates a request that runs exactly once.
-         * No constraints — we want this to run immediately so the inbox looks right
-         * as soon as possible after the user opens the app.
+         * Using [beginUniqueWork] guarantees at most one chain is running at a time.
+         * If a chain is already queued/running, KEEP leaves it untouched.
+         *
+         * WHY CHAIN?
+         * [ParseAllTransactionsWorker] queries for messages with categoryId == "TRANSACTIONS".
+         * It can only see those messages once THIS worker has written the categoryId.
+         * Running both workers in parallel (the old approach) caused [ParseAllTransactionsWorker]
+         * to find zero TRANSACTIONS messages on first install, setting its "done" flag before
+         * any data existed. Chaining fixes that ordering guarantee.
          */
         fun enqueue(context: Context) {
-            val request = OneTimeWorkRequestBuilder<CategorizeAllMessagesWorker>()
+            val categorizeRequest = OneTimeWorkRequestBuilder<CategorizeAllMessagesWorker>()
                 .addTag(WORKER_TAG)
                 .build()
+            val parseRequest = OneTimeWorkRequestBuilder<ParseAllTransactionsWorker>()
+                .addTag(ParseAllTransactionsWorker.WORKER_TAG)
+                .build()
 
-            // enqueueUniqueWork ensures only one instance of this worker runs at a time,
-            // even if enqueue() is accidentally called multiple times.
+            // Chain: categorize first, then parse transactions.
+            // ParseAllTransactionsWorker starts only after this worker returns Result.success().
             WorkManager.getInstance(context)
-                .enqueueUniqueWork(
+                .beginUniqueWork(
                     WORKER_TAG,
-                    androidx.work.ExistingWorkPolicy.KEEP, // don't restart if already running
-                    request
+                    androidx.work.ExistingWorkPolicy.KEEP,
+                    categorizeRequest
                 )
+                .then(parseRequest)
+                .enqueue()
 
-            Timber.d("CategorizeAllMessagesWorker: enqueued")
+            Timber.d("CategorizeAllMessagesWorker: enqueued (chained → ParseAllTransactionsWorker)")
         }
     }
 
@@ -101,63 +113,68 @@ class CategorizeAllMessagesWorker(
     override fun doWork(): Result {
         Timber.d("CategorizeAllMessagesWorker: started")
 
-        // Open Realm on this background thread.
-        // Each thread must open its own Realm instance — Realm is thread-local.
-        Realm.getDefaultInstance().use { realm ->
+        return try {
+            // Open Realm on this background thread.
+            // Each thread must open its own Realm instance — Realm is thread-local.
+            Realm.getDefaultInstance().use { realm ->
 
-            // Re-categorize ALL conversations so the new PERSONAL/ALL logic applies.
-            // This is safe to do on every version bump — conversations get the right
-            // category assigned and the worker won't run again until the next version.
-            val uncategorized = realm
-                .where(Conversation::class.java)
-                .isNotEmpty("recipients")     // skip ghost conversations with no recipients
-                .findAll()
+                // Re-categorize ALL conversations so the new PERSONAL/ALL logic applies.
+                // This is safe to do on every version bump — conversations get the right
+                // category assigned and the worker won't run again until the next version.
+                val uncategorized = realm
+                    .where(Conversation::class.java)
+                    .isNotEmpty("recipients")     // skip ghost conversations with no recipients
+                    .findAll()
 
-            Timber.d("CategorizeAllMessagesWorker: ${uncategorized.size} conversations to process")
+                Timber.d("CategorizeAllMessagesWorker: ${uncategorized.size} conversations to process")
 
-            // Process each conversation individually.
-            // We use copyFromRealm() to get an unmanaged (plain Kotlin) list so we
-            // can safely iterate while Realm is still open and performing other writes.
-            val snapshot = realm.copyFromRealm(uncategorized)
+                // Process each conversation individually.
+                // We use copyFromRealm() to get an unmanaged (plain Kotlin) list so we
+                // can safely iterate while Realm is still open and performing other writes.
+                val snapshot = realm.copyFromRealm(uncategorized)
 
-            snapshot.forEach { conversation ->
-                // Get the most recent incoming message for this thread.
-                // We use the managed Realm query (not the snapshot) for the messages
-                // because we only need the address + body strings, not full objects.
-                val lastMessage = realm.where(Message::class.java)
-                    .equalTo("threadId", conversation.id)
-                    .sort("date", Sort.DESCENDING)
-                    .findFirst()
-                    ?: return@forEach  // skip threads with no messages
-
-                // Ask the categorizer for the best category based on sender + body
-                val category = categorizer.categorize(
-                    address = lastMessage.address,
-                    body    = lastMessage.body
-                )
-
-                // Always write the category — this is a full re-categorization pass.
-                realm.executeTransaction { r ->
-                    r.where(Conversation::class.java)
-                        .equalTo("id", conversation.id)
-                        .findFirst()
-                        ?.apply { categoryId = category.name }
-
-                    r.where(Message::class.java)
+                snapshot.forEach { conversation ->
+                    // Get the most recent incoming message for this thread.
+                    // We use the managed Realm query (not the snapshot) for the messages
+                    // because we only need the address + body strings, not full objects.
+                    val lastMessage = realm.where(Message::class.java)
                         .equalTo("threadId", conversation.id)
-                        .findAll()
-                        .forEach { it.categoryId = category.name }
+                        .sort("date", Sort.DESCENDING)
+                        .findFirst()
+                        ?: return@forEach  // skip threads with no messages
+
+                    // Ask the categorizer for the best category based on sender + body
+                    val category = categorizer.categorize(
+                        address = lastMessage.address,
+                        body    = lastMessage.body
+                    )
+
+                    // Always write the category — this is a full re-categorization pass.
+                    realm.executeTransaction { r ->
+                        r.where(Conversation::class.java)
+                            .equalTo("id", conversation.id)
+                            .findFirst()
+                            ?.apply { categoryId = category.name }
+
+                        r.where(Message::class.java)
+                            .equalTo("threadId", conversation.id)
+                            .findAll()
+                            .forEach { it.categoryId = category.name }
+                    }
                 }
             }
+
+            // Mark the one-time migration as done so this worker never runs again
+            prefs.categorizedV1Done.set(true)
+            prefs.categorizedV2Done.set(true)
+            prefs.categorizedV3Done.set(true)
+
+            Timber.d("CategorizeAllMessagesWorker: completed successfully")
+            Result.success()
+        } catch (e: Exception) {
+            Timber.e(e, "CategorizeAllMessagesWorker: failed — will retry")
+            Result.retry()
         }
-
-        // Mark the one-time migration as done so this worker never runs again
-        prefs.categorizedV1Done.set(true)
-        prefs.categorizedV2Done.set(true)
-        prefs.categorizedV3Done.set(true)
-
-        Timber.d("CategorizeAllMessagesWorker: completed successfully")
-        return Result.success()
     }
 }
 

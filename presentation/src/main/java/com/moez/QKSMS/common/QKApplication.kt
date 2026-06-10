@@ -48,7 +48,6 @@ import dev.octoshrimpy.quik.util.NightModeManager
 import dev.octoshrimpy.quik.util.Preferences
 import dev.octoshrimpy.quik.worker.CategorizeAllMessagesWorker
 import dev.octoshrimpy.quik.worker.HousekeepingWorker
-import dev.octoshrimpy.quik.worker.ParseAllTransactionsWorker
 import io.reactivex.disposables.CompositeDisposable
 import io.realm.Realm
 import io.realm.RealmConfiguration
@@ -139,28 +138,31 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
         // register, or re-register, housekeeping work manager
         HousekeepingWorker.register(applicationContext)
 
-        // ── First-run SMS categorization ──────────────────────────────────────────
-        // On the very first launch after Phase 1 is installed, all existing historical
-        // messages have categoryId = "ALL" (set by the Realm migration).
+        // ── First-run SMS categorization + transaction parsing ────────────────────
         //
-        // We enqueue a one-time background worker to classify them all.
-        // The worker sets prefs.categorizedV1Done = true when done, so this check
-        // is skipped on all subsequent launches.
+        // CategorizeAllMessagesWorker.enqueue() now CHAINS into ParseAllTransactionsWorker.
+        // ParseAllTransactionsWorker needs TRANSACTIONS-categorised messages to exist, so
+        // it must always run AFTER categorisation, never in parallel.
         //
-        // WorkManager MUST be initialized (line above) before we can enqueue work.
-        if (!prefs.categorizedV3Done.get()) {
+        // Condition: run if either one-time job hasn't completed yet.
+        //   • !categorizedV3Done  → brand-new install, or upgrade that requires re-categorisation
+        //   • !parsedTransactionsV1Done → upgrade from pre-Phase-2 build (categorised but not parsed)
+        //
+        // For a fresh install the chain will find no messages (sync hasn't happened yet).
+        // The post-sync subscription below re-enqueues the chain once sync completes, at
+        // which point all historical messages exist and will be correctly categorised then parsed.
+        //
+        // WorkManager MUST be initialized (above) before we can enqueue work.
+        if (!prefs.categorizedV3Done.get() || !prefs.parsedTransactionsV1Done.get()) {
             CategorizeAllMessagesWorker.enqueue(applicationContext)
         }
 
-        // ── Phase 2: First-run transaction parsing ────────────────────────────────
-        // Parse all historical TRANSACTIONS messages into ParsedTransaction rows so
-        // the Finance Dashboard has data on first launch. Guarded by a one-time flag.
-        if (!prefs.parsedTransactionsV1Done.get()) {
-            ParseAllTransactionsWorker.enqueue(applicationContext)
-        }
-
-        // Re-categorize after every sync completes (handles the race condition where
-        // the worker ran before messages were synced for the first time).
+        // Re-run the full chain after every sync completes.
+        // This is the critical fix for the first-install race condition:
+        //   1. App starts → workers run before sync → find nothing → mark flags done
+        //   2. Sync completes (triggered by MainViewModel) → this subscription fires
+        //   3. CategorizeAllMessagesWorker runs on the now-populated message store
+        //   4. ParseAllTransactionsWorker runs immediately after → Finance data populated ✓
         appDisposables.add(
             syncRepository.syncProgress
                 .filter { it is SyncRepository.SyncProgress.Idle }

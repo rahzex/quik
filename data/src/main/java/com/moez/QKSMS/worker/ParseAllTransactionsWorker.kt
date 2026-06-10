@@ -57,7 +57,8 @@ class ParseAllTransactionsWorker(
 ) : Worker(appContext, workerParams) {
 
     companion object {
-        private const val WORKER_TAG  = "parse_all_transactions_v1"
+        // internal so CategorizeAllMessagesWorker can reference it when building the chain
+        internal const val WORKER_TAG  = "parse_all_transactions_v1"
         private const val BATCH_SIZE  = 50
 
         fun enqueue(context: Context) {
@@ -78,76 +79,81 @@ class ParseAllTransactionsWorker(
     override fun doWork(): Result {
         Timber.d("ParseAllTransactionsWorker: started")
 
-        Realm.getDefaultInstance().use { realm ->
-            // Find all TRANSACTIONS + BILL_REMINDER messages that have NOT yet been parsed.
-            // "Not yet parsed" = no corresponding ParsedTransaction row exists.
-            val allTxnMessages = realm
-                .where(Message::class.java)
-                .beginGroup()
-                    .equalTo("categoryId", "TRANSACTIONS")
-                    .or()
-                    .equalTo("categoryId", "BILL_REMINDER")
-                .endGroup()
-                .sort("date", Sort.DESCENDING)
-                .findAll()
+        return try {
+            Realm.getDefaultInstance().use { realm ->
+                // Find all TRANSACTIONS + BILL_REMINDER messages that have NOT yet been parsed.
+                // "Not yet parsed" = no corresponding ParsedTransaction row exists.
+                val allTxnMessages = realm
+                    .where(Message::class.java)
+                    .beginGroup()
+                        .equalTo("categoryId", "TRANSACTIONS")
+                        .or()
+                        .equalTo("categoryId", "BILL_REMINDER")
+                    .endGroup()
+                    .sort("date", Sort.DESCENDING)
+                    .findAll()
 
-            Timber.d("ParseAllTransactionsWorker: ${allTxnMessages.size} TRANSACTIONS messages found")
+                Timber.d("ParseAllTransactionsWorker: ${allTxnMessages.size} TRANSACTIONS messages found")
 
-            // copyFromRealm() detaches from Realm so we can safely iterate while writing.
-            val snapshot = realm.copyFromRealm(allTxnMessages)
+                // copyFromRealm() detaches from Realm so we can safely iterate while writing.
+                val snapshot = realm.copyFromRealm(allTxnMessages)
 
-            var parsed = 0
-            var batch  = mutableListOf<Pair<ParsedTransaction, String>>() // (txn, compositeBalKey)
+                var parsed = 0
+                var batch  = mutableListOf<Pair<ParsedTransaction, String>>() // (txn, compositeBalKey)
 
-            snapshot.forEach { message ->
-                // Skip if already parsed (idempotent re-run safety).
-                val alreadyExists = realm.where(ParsedTransaction::class.java)
-                    .equalTo("id", message.id)
-                    .count() > 0
-                if (alreadyExists) return@forEach
+                snapshot.forEach { message ->
+                    // Skip if already parsed (idempotent re-run safety).
+                    val alreadyExists = realm.where(ParsedTransaction::class.java)
+                        .equalTo("id", message.id)
+                        .count() > 0
+                    if (alreadyExists) return@forEach
 
-                val data = transactionParser.parse(message.address, message.body)
-                    ?: return@forEach  // not parseable — skip silently
+                    val data = transactionParser.parse(message.address, message.body)
+                        ?: return@forEach  // not parseable — skip silently
 
-                val cal = java.util.Calendar.getInstance().apply { timeInMillis = message.date }
-                val txn = ParsedTransaction().apply {
-                    id               = message.id
-                    threadId         = message.threadId
-                    date             = message.date
-                    amount           = data.amount
-                    isDebit          = data.isDebit
-                    merchant         = data.merchant
-                    reference        = data.reference
-                    accountLast4     = data.accountLast4
-                    availableBalance = data.availableBalance
-                    method           = data.method
-                    bankName         = data.bankName
-                    dueDateMs        = data.dueDateMs
-                    minDue           = data.minDue
-                    year             = cal.get(java.util.Calendar.YEAR)
-                    month            = cal.get(java.util.Calendar.MONTH) + 1
+                    val cal = java.util.Calendar.getInstance().apply { timeInMillis = message.date }
+                    val txn = ParsedTransaction().apply {
+                        id               = message.id
+                        threadId         = message.threadId
+                        date             = message.date
+                        amount           = data.amount
+                        isDebit          = data.isDebit
+                        merchant         = data.merchant
+                        reference        = data.reference
+                        accountLast4     = data.accountLast4
+                        availableBalance = data.availableBalance
+                        method           = data.method
+                        bankName         = data.bankName
+                        dueDateMs        = data.dueDateMs
+                        minDue           = data.minDue
+                        year             = cal.get(java.util.Calendar.YEAR)
+                        month            = cal.get(java.util.Calendar.MONTH) + 1
+                    }
+                    // Use bankName as key prefix so all sender IDs for same bank+account merge
+                    val keyPrefix = data.bankName.ifBlank { message.address }
+                    batch.add(Pair(txn, "$keyPrefix:${data.accountLast4}"))
+                    parsed++
+
+                    // Commit in batches to keep write-lock duration short.
+                    if (batch.size >= BATCH_SIZE) {
+                        commitBatch(realm, batch)
+                        batch = mutableListOf()
+                    }
                 }
-                // Use bankName as key prefix so all sender IDs for same bank+account merge
-                val keyPrefix = data.bankName.ifBlank { message.address }
-                batch.add(Pair(txn, "$keyPrefix:${data.accountLast4}"))
-                parsed++
 
-                // Commit in batches to keep write-lock duration short.
-                if (batch.size >= BATCH_SIZE) {
-                    commitBatch(realm, batch)
-                    batch = mutableListOf()
-                }
+                // Commit any remaining items.
+                if (batch.isNotEmpty()) commitBatch(realm, batch)
+
+                Timber.d("ParseAllTransactionsWorker: parsed $parsed transactions")
             }
 
-            // Commit any remaining items.
-            if (batch.isNotEmpty()) commitBatch(realm, batch)
-
-            Timber.d("ParseAllTransactionsWorker: parsed $parsed transactions")
+            prefs.parsedTransactionsV1Done.set(true)
+            Timber.d("ParseAllTransactionsWorker: completed")
+            Result.success()
+        } catch (e: Exception) {
+            Timber.e(e, "ParseAllTransactionsWorker: failed — will retry")
+            Result.retry()
         }
-
-        prefs.parsedTransactionsV1Done.set(true)
-        Timber.d("ParseAllTransactionsWorker: completed")
-        return Result.success()
     }
 
     private fun commitBatch(

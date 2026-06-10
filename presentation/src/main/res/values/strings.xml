@@ -549,6 +549,18 @@
     <string name="notification_foreground_worker_channel_name">Message receiving worker notification</string>
     <string name="notification_message_failed_action">Resend</string>
 
+    <!-- Category-aware notification banner strings -->
+    <string name="notif_badge_personal">Personal</string>
+    <string name="notif_badge_transactions">Txn</string>
+    <string name="notif_badge_otp">OTP</string>
+    <string name="notif_badge_updates">Update</string>
+    <string name="notif_badge_promos">Promo</string>
+    <string name="notif_badge_spam">Spam</string>
+    <string name="notif_badge_bill">Bill</string>
+    <string name="notif_otp_expires_in">Expires in %s</string>
+    <string name="notif_otp_copy">Copy</string>
+    <string name="notif_otp_copied">OTP copied</string>
+
     <string-array name="night_modes">
         <item>System</item>
         <item>Disabled</item>
