@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  notification_otp_expanded.xml
+  Custom big-content RemoteViews for OTP messages.
+
+  Shown when the user pulls down on the OTP heads-up banner (or when the
+  notification is in the shade in expanded state).
+
+  Height must be ≤ 256dp (Android's big-content limit).
+
+  Colors are set at runtime via RemoteViews.setInt / setTextColor in
+  NotificationManagerImpl so they correctly track dark/light mode.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="4dp"
+    android:paddingBottom="8dp"
+    android:paddingEnd="4dp">
+
+    <!-- ── Header row (same structure as compact view) ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="2dp"
+        android:paddingBottom="4dp">
+
+        <!-- OTP icon chip -->
+        <FrameLayout
+            android:id="@+id/notif_otp_icon_chip"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/rounded_rectangle_8dp">
+
+            <ImageView
+                android:id="@+id/notif_otp_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_notif_lock" />
+        </FrameLayout>
+
+        <!-- Title + time -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center_vertical">
+
+            <!-- "AM-PAYTMB · OTP" -->
+            <TextView
+                android:id="@+id/notif_otp_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/text_primary" />
+
+            <!-- "Expires in 10 min" -->
+            <TextView
+                android:id="@+id/notif_otp_expiry"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Time badge (top-right) -->
+        <TextView
+            android:id="@+id/notif_otp_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_gravity="top"
+            android:textSize="11sp"
+            android:textColor="@color/text_secondary" />
+
+    </LinearLayout>
+
+    <!-- ── OTP digit row + Copy button ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="6dp"
+        android:layout_marginStart="50dp">
+
+        <!-- Individual digit TextViews — text set at runtime -->
+        <TextView
+            android:id="@+id/notif_otp_d1"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp" />
+
+        <TextView
+            android:id="@+id/notif_otp_d2"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp" />
+
+        <TextView
+            android:id="@+id/notif_otp_d3"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp" />
+
+        <TextView
+            android:id="@+id/notif_otp_d4"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp" />
+
+        <TextView
+            android:id="@+id/notif_otp_d5"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/notif_otp_d6"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/notif_otp_d7"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/notif_otp_d8"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_rectangle_7dp"
+            android:layout_marginEnd="3dp"
+            android:visibility="gone" />
+
+        <!-- Copy pill button -->
+        <TextView
+            android:id="@+id/notif_otp_copy_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:text="@string/notif_otp_copy"
+            android:background="@drawable/rounded_rectangle_8dp"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
+</LinearLayout>
+

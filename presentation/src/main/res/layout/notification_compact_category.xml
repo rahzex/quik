@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  notification_compact_category.xml
+  Custom compact RemoteViews used inside DecoratedCustomViewStyle for ALL message categories.
+
+  Height must be ≤ 64dp so Android accepts it as a compact content view.
+  References @color/cat_*_bg / @color/cat_*_fg which are defined in both
+  values/colors.xml (light) and values-night/colors.xml (dark), so night mode
+  is handled automatically by the resource system — no runtime setInt needed.
+
+  The icon chip bg/fg and badge bg/fg are set at runtime via RemoteViews.setInt /
+  setTextColor because the exact color depends on the dynamic category value
+  (the layout provides the view IDs; NotificationManagerImpl supplies the colors).
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="0dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:minHeight="56dp">
+
+    <!-- Category icon chip: 40×40dp rounded square -->
+    <FrameLayout
+        android:id="@+id/notif_icon_chip"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/rounded_rectangle_8dp">
+
+        <ImageView
+            android:id="@+id/notif_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_chat_bubble_outline_24dp" />
+    </FrameLayout>
+
+    <!-- Text column -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <!-- Row 1: sender name + time -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/notif_sender"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/notif_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary" />
+
+        </LinearLayout>
+
+        <!-- Row 2: preview text + category badge -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/notif_preview"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Category badge pill — hidden for ALL/PERSONAL when no badge needed -->
+            <TextView
+                android:id="@+id/notif_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:background="@drawable/rounded_rectangle_4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+

@@ -24,6 +24,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.media.AudioAttributes
 import android.net.Uri
@@ -187,6 +188,15 @@ class NotificationManagerImpl @Inject constructor(
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.notification_compact_category)
 
+        // Resolve text colours respecting the current night-mode configuration so that
+        // the custom RemoteViews content is readable on both light and dark backgrounds.
+        val isNight = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val textPrimaryColor = ContextCompat.getColor(
+            context, if (isNight) R.color.textPrimaryDark else R.color.textPrimary)
+        val textSecondaryColor = ContextCompat.getColor(
+            context, if (isNight) R.color.textSecondaryDark else R.color.textSecondary)
+
         // Icon chip background color
         rv.setInt(
             R.id.notif_icon_chip, "setBackgroundColor",
@@ -205,8 +215,13 @@ class NotificationManagerImpl @Inject constructor(
         else
             senderName
         rv.setTextViewText(R.id.notif_sender, displaySender)
+        rv.setTextColor(R.id.notif_sender, textPrimaryColor)
+
         rv.setTextViewText(R.id.notif_time, timeStr)
+        rv.setTextColor(R.id.notif_time, textSecondaryColor)
+
         rv.setTextViewText(R.id.notif_preview, previewText)
+        rv.setTextColor(R.id.notif_preview, textSecondaryColor)
 
         // Badge pill
         if (spec.showBadge) {
@@ -238,6 +253,14 @@ class NotificationManagerImpl @Inject constructor(
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.notification_otp_expanded)
 
+        // Resolve text colours for dark/light mode
+        val isNight = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val textPrimaryColor = ContextCompat.getColor(
+            context, if (isNight) R.color.textPrimaryDark else R.color.textPrimary)
+        val textSecondaryColor = ContextCompat.getColor(
+            context, if (isNight) R.color.textSecondaryDark else R.color.textSecondary)
+
         // Icon chip
         rv.setInt(
             R.id.notif_otp_icon_chip, "setBackgroundColor",
@@ -254,7 +277,10 @@ class NotificationManagerImpl @Inject constructor(
             R.id.notif_otp_title,
             "$senderName · ${context.getString(R.string.notif_badge_otp)}"
         )
+        rv.setTextColor(R.id.notif_otp_title, textPrimaryColor)
+
         rv.setTextViewText(R.id.notif_otp_time, timeStr)
+        rv.setTextColor(R.id.notif_otp_time, textSecondaryColor)
 
         // Expiry
         if (!expiry.isNullOrEmpty()) {
@@ -465,7 +491,10 @@ class NotificationManagerImpl @Inject constructor(
                 val expandedRv = buildOtpExpandedView(
                     senderName, timeStr, otpCode, expiry, threadId, spec
                 )
+                // Show OTP digits + Copy button in both the expanded shade view AND the
+                // heads-up banner so the user sees them without having to pull down.
                 notification.setCustomBigContentView(expandedRv)
+                notification.setCustomHeadsUpContentView(expandedRv)
             }
         }
 
@@ -502,7 +531,11 @@ class NotificationManagerImpl @Inject constructor(
                 noneRv.setImageViewResource(R.id.notif_icon, R.drawable.ic_chat_bubble_outline_24dp)
                 noneRv.setInt(R.id.notif_icon, "setColorFilter",
                     ContextCompat.getColor(context, R.color.cat_default_fg))
+                // Override all views including big/heads-up so OTP content is hidden
+                // when the user has opted out of content previews.
                 notification.setCustomContentView(noneRv)
+                notification.setCustomBigContentView(noneRv)
+                notification.setCustomHeadsUpContentView(noneRv)
             }
         }
 

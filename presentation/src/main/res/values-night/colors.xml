@@ -31,5 +31,13 @@
     <color name="finance_green_text">#3DAB6A</color>
     <color name="finance_red_bg">#2A1010</color>
     <color name="finance_red_text">#E57373</color>
+
+    <!-- Text colours in dark mode — these override the light values so that any layout
+         referencing @color/textPrimary / @color/textSecondary directly (e.g. RemoteViews
+         notification layouts) gets readable light text on dark notification backgrounds. -->
+    <color name="textPrimary">#FFFFFF</color>
+    <color name="textPrimaryDisabled">#7FFFFFFF</color>
+    <color name="textSecondary">#CCFFFFFF</color>
+    <color name="textSecondaryDisabled">#67FFFFFF</color>
 </resources>
 
