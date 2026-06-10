@@ -31,7 +31,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Title row: "Messages" + search icon + overflow icon -->
+        <!-- Title row: "Messages" + search icon + overflow icon (hidden in selection mode) -->
         <LinearLayout
             android:id="@+id/inboxTitleRow"
             android:layout_width="match_parent"
@@ -64,8 +64,9 @@
                     android:layout_height="14dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_search_black_24dp"
-                    android:tint="?android:attr/textColorSecondary"
-                    android:scaleType="fitCenter" />
+                    app:tint="?android:attr/textColorSecondary"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="@string/main_search_hint" />
             </FrameLayout>
 
             <!-- Overflow icon -->
@@ -80,9 +81,108 @@
                     android:layout_height="14dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_more_vert_black_24dp"
-                    android:tint="?android:attr/textColorSecondary"
-                    android:scaleType="fitCenter" />
+                    app:tint="?android:attr/textColorSecondary"
+                    android:scaleType="fitCenter"
+                    android:contentDescription="@string/button_more" />
             </FrameLayout>
+
+        </LinearLayout>
+
+        <!-- Selection action bar (shown when conversations are selected) -->
+        <LinearLayout
+            android:id="@+id/selectionActionBar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <!-- Back / clear selection button -->
+            <ImageView
+                android:id="@+id/selectionBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:layout_marginEnd="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/button_cancel" />
+
+            <!-- Selected count label -->
+            <dev.octoshrimpy.quik.common.widget.QkTextView
+                android:id="@+id/selectionCount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="18sp"
+                android:textStyle="normal"
+                android:textColor="?android:attr/textColorPrimary"
+                tools:text="3 selected" />
+
+            <!-- Select all -->
+            <ImageView
+                android:id="@+id/selectionSelectAll"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="?attr/actionModeSelectAllDrawable"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/main_menu_select_all" />
+
+            <!-- Archive -->
+            <ImageView
+                android:id="@+id/selectionArchive"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_archive_white_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/main_menu_archive"
+                android:visibility="gone" />
+
+            <!-- Unarchive -->
+            <ImageView
+                android:id="@+id/selectionUnarchive"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_inbox_black_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/main_menu_unarchive"
+                android:visibility="gone" />
+
+            <!-- Delete -->
+            <ImageView
+                android:id="@+id/selectionDelete"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_delete_white_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/main_menu_delete" />
+
+            <!-- Overflow for more selection actions -->
+            <ImageView
+                android:id="@+id/selectionOverflow"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                android:src="@drawable/ic_more_vert_black_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/button_more" />
 
         </LinearLayout>
 
@@ -103,9 +203,10 @@
                 android:layout_width="13dp"
                 android:layout_height="13dp"
                 android:src="@drawable/ic_search_black_24dp"
-                android:tint="?android:attr/textColorTertiary"
+                app:tint="?android:attr/textColorTertiary"
                 android:scaleType="fitCenter"
-                android:layout_marginEnd="7dp" />
+                android:layout_marginEnd="7dp"
+                android:contentDescription="@string/main_search_hint" />
 
             <dev.octoshrimpy.quik.common.widget.QkEditText
                 android:id="@+id/toolbarSearch"

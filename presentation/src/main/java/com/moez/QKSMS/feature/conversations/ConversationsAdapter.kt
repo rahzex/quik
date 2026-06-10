@@ -33,16 +33,12 @@ import dev.octoshrimpy.quik.common.util.Colors
 import dev.octoshrimpy.quik.common.util.DateFormatter
 import dev.octoshrimpy.quik.common.util.extensions.getColorCompat
 import dev.octoshrimpy.quik.common.util.extensions.resolveThemeColor
-import dev.octoshrimpy.quik.common.util.extensions.setTint
 import dev.octoshrimpy.quik.databinding.ConversationListItemBinding
 import dev.octoshrimpy.quik.model.Conversation
 import dev.octoshrimpy.quik.model.MessageCategory
 import dev.octoshrimpy.quik.repository.ScheduledMessageRepository
 import dev.octoshrimpy.quik.util.PhoneNumberUtils
-import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.subjects.PublishSubject
-import io.reactivex.subjects.Subject
 import javax.inject.Inject
 
 class ConversationsAdapter @Inject constructor(
@@ -55,9 +51,6 @@ class ConversationsAdapter @Inject constructor(
 ) : QkRealmAdapter<Conversation, QkBindingViewHolder<ConversationListItemBinding>>() {
     private val disposables = CompositeDisposable()
 
-    // Emits threadId when user long-presses and selects "Move to Category"
-    private val _moveToCategoryRequest: Subject<Long> = PublishSubject.create()
-    val moveToCategoryRequest: Observable<Long> = _moveToCategoryRequest
 
     /** Set by MainActivity when the active tab changes — controls badge visibility. */
     var activeCategory: MessageCategory = MessageCategory.ALL
@@ -98,8 +91,6 @@ class ConversationsAdapter @Inject constructor(
                 val conversation = getItem(adapterPosition) ?: return@setOnLongClickListener true
                 toggleSelection(conversation.id)
                 binding.root.isActivated = isSelected(conversation.id)
-                // Offer "Move to Category" on first long-press (selection mode just started)
-                _moveToCategoryRequest.onNext(conversation.id)
                 true
             }
         }
@@ -110,14 +101,6 @@ class ConversationsAdapter @Inject constructor(
         val binding = holder.binding
 
         // If the last message wasn't incoming, then the colour doesn't really matter anyway
-        val lastMessage = conversation.lastMessage
-        val recipient = when {
-            conversation.recipients.size == 1 || lastMessage == null -> conversation.recipients.firstOrNull()
-            else -> conversation.recipients.find { recipient ->
-                phoneNumberUtils.compare(recipient.address, lastMessage.address)
-            }
-        }
-        val theme = colors.theme(recipient).theme
 
         holder.itemView.isActivated = isSelected(conversation.id)
 

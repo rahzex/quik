@@ -127,6 +127,14 @@ class MainActivity : QkThemedActivity(), MainView {
     // Keep track of the active tab view for styling
     private var activeTabView: TextView? = null
 
+    // Selection bar state (updated in render() so the overflow popup can read them)
+    private var selIsArchived = false
+    private var selMarkPinned = true
+    private var selMarkRead = false
+    private var selAddContact = false
+    private var selSelectedCount = 0
+    private var selLastSelectedIds: List<Long> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         AndroidInjection.inject(this)
         super.onCreate(savedInstanceState)
@@ -141,6 +149,11 @@ class MainActivity : QkThemedActivity(), MainView {
         viewModel.bindView(this)
         onNewIntentIntent.onNext(intent)
 
+        // Track the latest selected IDs for use in selection overflow popup
+        conversationsAdapter.selectionChanges
+            .autoDisposable(scope(Lifecycle.Event.ON_DESTROY))
+            .subscribe { ids -> selLastSelectedIds = ids }
+
         snackbarBinding = MainPermissionHintBinding.bind(binding.snackbar.inflate()).also {
             it.snackbarButton.clicks()
                 .autoDisposable(scope(Lifecycle.Event.ON_DESTROY))
@@ -152,7 +165,7 @@ class MainActivity : QkThemedActivity(), MainView {
             it.syncingProgress.indeterminateTintList = ColorStateList.valueOf(theme.blockingFirst().theme)
         }
 
-        // Overflow icon opens context popup menu
+        // Overflow icon opens context popup menu (non-selection mode)
         binding.overflowIcon.setOnClickListener { view ->
             val popup = androidx.appcompat.widget.PopupMenu(this, view)
             menuInflater.inflate(R.menu.main, popup.menu)
@@ -168,6 +181,14 @@ class MainActivity : QkThemedActivity(), MainView {
             }
             popup.show()
         }
+
+        // ── Selection action bar buttons ──────────────────────────────────────
+        binding.selectionBack.setOnClickListener { clearSelection() }
+        binding.selectionSelectAll.setOnClickListener { optionsItemIntent.onNext(R.id.select_all) }
+        binding.selectionArchive.setOnClickListener { optionsItemIntent.onNext(R.id.archive) }
+        binding.selectionUnarchive.setOnClickListener { optionsItemIntent.onNext(R.id.unarchive) }
+        binding.selectionDelete.setOnClickListener { optionsItemIntent.onNext(R.id.delete) }
+        binding.selectionOverflow.setOnClickListener { view -> showSelectionOverflowMenu(view) }
 
         itemTouchCallback.adapter = conversationsAdapter
         conversationsAdapter.autoScrollToStart(binding.recyclerView)
@@ -194,12 +215,52 @@ class MainActivity : QkThemedActivity(), MainView {
                 activeTabView?.setTextColor(theme.theme)
             }
 
-        // Wire up move-to-category from adapter long-press
-        conversationsAdapter.moveToCategoryRequest
-            .autoDisposable(scope(Lifecycle.Event.ON_DESTROY))
-            .subscribe { threadId ->
+        // Wire up move-to-category from adapter long-press — now triggered via selection overflow
+    }
+
+    /** Popup menu shown from the selection-bar overflow button. */
+    private fun showSelectionOverflowMenu(anchor: android.view.View) {
+        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+        val menu = popup.menu
+
+        // Pin / Unpin
+        if (selMarkPinned)
+            menu.add(0, R.id.pin, 0, R.string.main_menu_pin)
+        else
+            menu.add(0, R.id.unpin, 0, R.string.main_menu_unpin)
+
+        // Read / Unread
+        if (selMarkRead)
+            menu.add(0, R.id.read, 1, R.string.main_menu_read)
+        else
+            menu.add(0, R.id.unread, 2, R.string.main_menu_unread)
+
+        // Block
+        menu.add(0, R.id.block, 3, R.string.main_menu_block)
+
+        // Add contact (only when single unrecognised contact selected)
+        if (selAddContact)
+            menu.add(0, R.id.add, 4, R.string.main_menu_add_contact)
+
+        // Rename (single selection only)
+        if (selSelectedCount == 1)
+            menu.add(0, R.id.rename, 5, R.string.main_menu_rename_conversation)
+
+        // Move to Category (single selection only)
+        if (selSelectedCount == 1)
+            menu.add(0, 0 /* custom */, 6, "Move to Category")
+
+        popup.setOnMenuItemClickListener { item ->
+            if (item.itemId == 0) {
+                // "Move to Category" — use single selected thread
+                val threadId = selLastSelectedIds.firstOrNull() ?: return@setOnMenuItemClickListener true
                 showMoveToCategoryDialog(threadId)
+            } else {
+                optionsItemIntent.onNext(item.itemId)
             }
+            true
+        }
+        popup.show()
     }
 
     private fun setupCategoryTabs() {
@@ -327,21 +388,39 @@ class MainActivity : QkThemedActivity(), MainView {
 
         // In new layout, search bar is always visible; title row toggles based on selection
         binding.inboxHead.isVisible = state.page is Inbox || state.page is Searching || state.page is Archived
-        binding.toolbarTitle.text = when {
-            state.page is Inbox && state.page.selected > 0 ->
-                getString(R.string.main_title_selected, state.page.selected)
-            state.page is Archived && state.page.selected > 0 ->
-                getString(R.string.main_title_selected, state.page.selected)
-            state.page is Archived -> getString(R.string.title_archived)
-            else -> getString(R.string.main_title_messages)
+
+        // Update cached selection bar state for use in overflow popup
+        selIsArchived = state.page is Archived
+        selMarkPinned = markPinned
+        selMarkRead = markRead
+        selAddContact = addContact
+        selSelectedCount = selectedConversations
+
+        // Toggle selection action bar vs normal title row
+        val inSelectionMode = selectedConversations > 0
+        binding.inboxTitleRow.isVisible = !inSelectionMode
+        binding.searchBar.isVisible = !inSelectionMode
+        binding.selectionActionBar.isVisible = inSelectionMode
+
+        if (inSelectionMode) {
+            binding.selectionCount.text = getString(R.string.main_title_selected, selectedConversations)
+            // Show select-all only when more than one conversation exists
+            binding.selectionSelectAll.isVisible = conversationsAdapter.itemCount > 1
+            // Archive vs Unarchive
+            binding.selectionArchive.isVisible = state.page is Inbox
+            binding.selectionUnarchive.isVisible = state.page is Archived
+        } else {
+            // Normal title
+            binding.toolbarTitle.text = when {
+                state.page is Archived -> getString(R.string.title_archived)
+                else -> getString(R.string.main_title_messages)
+            }
         }
 
-        // Category tabs only visible on Inbox/Archived
-        binding.categoryTabsScroll.isVisible = state.page is Inbox || state.page is Archived
+        // Category tabs only visible on Inbox/Archived (and not in selection mode to save space)
+        binding.categoryTabsScroll.isVisible = (state.page is Inbox || state.page is Archived) && !inSelectionMode
         binding.tabsDivider.isVisible = true
 
-        // Context action menu (shown when conversations selected)
-        // These are surfaced via the overflowIcon popup in onCreate
 
         binding.compose.setVisible(state.page is Inbox || state.page is Archived)
         conversationsAdapter.emptyView = binding.empty.takeIf {
@@ -535,6 +614,11 @@ class MainActivity : QkThemedActivity(), MainView {
         }
 
     override fun onBackPressed() {
+        // If in selection mode, clear selection first
+        if (selSelectedCount > 0) {
+            clearSelection()
+            return
+        }
         // If searching, clear search; otherwise default back
         if (binding.toolbarSearch.text?.isNotEmpty() == true) {
             clearSearch()
