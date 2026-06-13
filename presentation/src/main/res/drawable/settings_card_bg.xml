@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Settings card group background: rounded rect with subtle border, no theme attrs -->
+<!--
+  Settings card group background.
+  Fill:   @color/surface_card (light #FFFFFF / dark #141414 = spec surface token).
+  Border: @color/settings_card_stroke (night-aware: dark rgba(255,255,255,0.07)).
+  Light mode: card fills to white, same as page; border provides the separation.
+  Dark mode:  card fills to #141414 on #111111 background + faint white border.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#00000000" />
-            <stroke android:width="1dp" android:color="#1A000000" />
+            <solid android:color="@color/surface_card" />
+            <stroke android:width="1dp" android:color="@color/settings_card_stroke" />
             <corners android:radius="12dp" />
         </shape>
     </item>

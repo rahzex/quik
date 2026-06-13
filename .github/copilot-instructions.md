@@ -1,1 +1,2 @@
-Always Build and install apk in connected device, if any. If no device is connected, build apk and save it in the output folder.
+1. **UI & Design** - Always refer and look for to pulse-sms-with-tabs_3.html file for design changes and references for quick android app UI changes.
+2. **Build Instruction** - Always Build and install apk in connected device, if any. If no device is connected, build apk and save it in the output folder.

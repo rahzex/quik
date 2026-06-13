@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Night variant: active pill fill = surface #141414 per spec .month-opt.on -->
+<!-- Night variant: surface color #141414 (spec surface token) -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:color="@color/surfaceDark" />
 </selector>
+
 

@@ -229,3 +229,60 @@ gradle.taskGraph.whenReady { taskGraph ->
         throw new GradleException("Keystore properties file not found")
     }
 }
+
+// Workaround: AGP 8.2 mergeDebugResources does not compile all drawable XMLs
+// (shapes, ripples, layer-lists) to .flat format when referenced only from
+// theme/style value resources.  AAPT2 link then fails with "not found".
+// This task runs aapt2 compile on every drawable XML that is still missing its
+// .flat counterpart after the merge step.
+android.applicationVariants.all { variant ->
+    def variantName = variant.name.capitalize()
+    def mergeTask = tasks.findByName("merge${variantName}Resources")
+    if (mergeTask == null) return
+
+    def fixTask = tasks.register("fixMissing${variantName}DrawableFlats") {
+        description = "Compile drawable XMLs missing from AGP merge output for ${variantName}"
+        def flatDir = new File(buildDir,
+                "intermediates/merged_res/${variant.dirName}")
+        def srcDir = new File(projectDir, "src/main/res/drawable")
+
+        // Declare inputs / outputs so Gradle can track UP-TO-DATE correctly
+        inputs.dir srcDir
+        outputs.dir flatDir
+
+        doLast {
+            if (!flatDir.exists()) flatDir.mkdirs()
+
+            // Locate aapt2 in the Android SDK build-tools
+            def sdkDir = android.sdkDirectory
+            def aapt2 = null
+            new File(sdkDir, "build-tools").listFiles()?.sort()?.reverseEach { bt ->
+                def candidate = new File(bt, "aapt2")
+                if (candidate.exists() && aapt2 == null) aapt2 = candidate
+            }
+            if (aapt2 == null) {
+                logger.warn("fixMissing${variantName}DrawableFlats: aapt2 not found, skipping")
+                return
+            }
+
+            srcDir.listFiles({ f -> f.name.endsWith(".xml") } as FileFilter)?.each { xmlFile ->
+                def expectedFlat = new File(flatDir, "drawable_${xmlFile.name}.flat")
+                if (!expectedFlat.exists()) {
+                    def proc = [aapt2.absolutePath, "compile",
+                                xmlFile.absolutePath, "-o", flatDir.absolutePath].execute()
+                    proc.waitFor()
+                    if (proc.exitValue() != 0) {
+                        logger.warn("aapt2 compile failed for ${xmlFile.name}: ${proc.err.text.trim()}")
+                    }
+                }
+            }
+        }
+    }
+
+    // Wire: fixTask runs immediately after mergeResources
+    mergeTask.finalizedBy fixTask
+    // processResources depends on fixTask so the flats are ready for AAPT link
+    def processTask = tasks.findByName("process${variantName}Resources")
+    processTask?.dependsOn fixTask
+}
+

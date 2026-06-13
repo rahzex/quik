@@ -25,11 +25,13 @@
     <color name="rippleDark">#33ffffff</color>
 
     <color name="toolbarLight">#FFFFFF</color>
-    <color name="toolbarDark">#1d262b</color>
+    <color name="toolbarDark">#141414</color>
     <color name="toolbarTranslucent">#88000000</color>
 
     <color name="backgroundLight">#FFFFFF</color>
-    <color name="backgroundDark">#192025</color>
+    <color name="backgroundDark">#111111</color>
+    <!-- surface: #141414 used for cards, headers, colorBackground -->
+    <color name="surfaceDark">#141414</color>
 
     <color name="textPrimary">#49555F</color>
     <color name="textPrimaryDisabled">#4C49555F</color>
@@ -37,21 +39,21 @@
     <color name="textSecondaryDisabled">#4C70808D</color>
     <color name="textTertiary">#B7B9C0</color>
 
-    <color name="textPrimaryDark">#FFFFFFFF</color>
-    <color name="textPrimaryDisabledDark">#7FFFFFFF</color>
-    <color name="textSecondaryDark">#ccffffff</color>
-    <color name="textSecondaryDisabledDark">#67ffffff</color>
-    <color name="textTertiaryDark">#80ffffff</color>
+    <color name="textPrimaryDark">#D4D4D4</color>
+    <color name="textPrimaryDisabledDark">#88D4D4D4</color>
+    <color name="textSecondaryDark">#888888</color>
+    <color name="textSecondaryDisabledDark">#55888888</color>
+    <color name="textTertiaryDark">#555555</color>
 
     <color name="bubbleLight">#ECEFF1</color>
-    <color name="bubbleDark">#11171B</color>
-    <color name="bubbleBlack">#0F1113</color>
+    <color name="bubbleDark">#1e1e1e</color>
+    <color name="bubbleBlack">#111111</color>
 
     <color name="incoming_bubble">#EAECF0</color>
     <color name="incoming_bubble_text">#111827</color>
 
     <color name="separatorLight">#0C000000</color>
-    <color name="separatorDark">#1AFFFFFF</color>
+    <color name="separatorDark">#12FFFFFF</color>
 
     <color name="switchThumbEnabledLight">#ECECEC</color>
     <color name="switchThumbEnabledDark">#B9B9B9</color>

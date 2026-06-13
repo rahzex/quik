@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Incoming message bubble: surface color in dark mode (#192025 bg + slightly lighter) -->
+    <!-- Incoming message bubble: surface color in dark mode -->
     <color name="incoming_bubble">#242D35</color>
     <!-- Incoming bubble text: light in dark mode -->
     <color name="incoming_bubble_text">#E8EAF0</color>
 
-    <!-- Accent colour: brighter in dark mode for visibility on dark backgrounds -->
-    <color name="accent">#5B8DEF</color>
+    <!-- Accent: spec dark accent = #E8E8E8 (near-white).
+         Applies to UI chrome only (tab bar, month pills, unread dots).
+         Outgoing bubble colours are user-selected theme colours, independent of this. -->
+    <color name="accent">#E8E8E8</color>
 
     <!-- Category avatar / badge colours (dark mode) -->
     <color name="cat_personal_bg">#1A2744</color>
@@ -26,18 +28,17 @@
     <color name="cat_default_bg">#2A2A2A</color>
     <color name="cat_default_fg">#BDBDBD</color>
 
-    <!-- Finance card (Credit/Debit detected) dark mode -->
-    <color name="finance_green_bg">#0E1F14</color>
+    <!-- Finance card (Credit/Debit detected) dark mode — spec semantic tokens -->
+    <color name="finance_green_bg">#101E14</color>
     <color name="finance_green_text">#3DAB6A</color>
-    <color name="finance_red_bg">#2A1010</color>
-    <color name="finance_red_text">#E57373</color>
+    <color name="finance_red_bg">#1E0E0D</color>
+    <color name="finance_red_text">#D9574D</color>
 
-    <!-- Text colours in dark mode — these override the light values so that any layout
-         referencing @color/textPrimary / @color/textSecondary directly (e.g. RemoteViews
-         notification layouts) gets readable light text on dark notification backgrounds. -->
-    <color name="textPrimary">#FFFFFF</color>
-    <color name="textPrimaryDisabled">#7FFFFFFF</color>
-    <color name="textSecondary">#CCFFFFFF</color>
-    <color name="textSecondaryDisabled">#67FFFFFF</color>
+    <!-- Text colours for RemoteViews / notifications in dark mode (must be raw hex).
+         spec: text #D4D4D4, text-2 #888888 -->
+    <color name="textPrimary">#D4D4D4</color>
+    <color name="textPrimaryDisabled">#88D4D4D4</color>
+    <color name="textSecondary">#888888</color>
+    <color name="textSecondaryDisabled">#55888888</color>
 </resources>
 

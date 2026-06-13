@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Night-mode aware surface color for card/group fills.
+     Light: backgroundLight (#FFFFFF) — cards blend into page, border differentiates.
+     Night: surfaceDark  (#141414) — cards sit 3 shades above backgroundDark (#111111). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/backgroundLight" />
+</selector>
+

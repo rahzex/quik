@@ -7,8 +7,7 @@
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:padding="12dp"
-    android:background="@drawable/rounded_rectangle_12dp"
-    android:backgroundTint="?android:attr/colorBackground"
+    android:background="@drawable/finance_card_bg"
     android:layout_marginBottom="8dp">
 
     <!-- Bank initial avatar -->
