@@ -182,10 +182,23 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
                 transactionParser.parse(message.address, message.body)?.let { data ->
                     financeRepo.saveTransaction(data, message)
                     if (data.availableBalance > 0.0) {
+                        // SMS contains an explicit "Avl Bal" field — use it directly (most accurate).
                         financeRepo.updateAccountBalance(
                             senderAddress = message.address,
                             accountLast4  = data.accountLast4,
                             balance       = data.availableBalance,
+                            ts            = message.date,
+                            bankName      = data.bankName,
+                            accountType   = data.accountType
+                        )
+                    } else if (data.accountLast4.isNotBlank()) {
+                        // No explicit balance in SMS — apply ±delta to the last-known balance
+                        // for this account (no-op if no baseline exists yet).
+                        financeRepo.applyTransactionDelta(
+                            senderAddress = message.address,
+                            accountLast4  = data.accountLast4,
+                            amount        = data.amount,
+                            isDebit       = data.isDebit,
                             ts            = message.date,
                             bankName      = data.bankName,
                             accountType   = data.accountType

@@ -82,6 +82,7 @@
     <string name="main_message_results">%d messages</string>
     <string name="inbox_empty_text">Your conversations will appear here</string>
     <string name="inbox_search_empty_text">No results</string>
+    <string name="search_empty_subtitle">Try a different keyword or sender name.</string>
     <string name="archived_empty_text">Your archived conversations will appear here</string>
     <string name="main_fab_cd">Start new conversation</string>
     <string name="main_default_sms_title">Love texting again</string>

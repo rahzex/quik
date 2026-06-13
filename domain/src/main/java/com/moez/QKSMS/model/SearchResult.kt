@@ -18,4 +18,10 @@
  */
 package dev.octoshrimpy.quik.model
 
-data class SearchResult(val query: String, val conversation: Conversation, val messages: Int)
+data class SearchResult(
+    val query: String,
+    val conversation: Conversation,
+    val messages: Int,
+    /** Body text from the most recent message matching the query (empty for title-only matches). */
+    val snippet: String = ""
+)

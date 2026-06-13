@@ -241,7 +241,26 @@
 
     </LinearLayout>
 
-    <!-- 1dp divider below header -->
+    <!-- Results count bar (shown during search; GONE height = 0 so divider stays flush when hidden) -->
+    <TextView
+        android:id="@+id/searchResultsBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:textSize="11sp"
+        android:textColor="?android:attr/textColorSecondary"
+        android:background="?attr/bubbleColor"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/inboxHead"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="6 results for &quot;debit&quot;"
+        tools:visibility="visible" />
+
+    <!-- 1dp divider below header / count bar -->
     <View
         android:id="@+id/tabsDivider"
         android:layout_width="0dp"
@@ -249,7 +268,7 @@
         android:background="?android:attr/listDivider"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/inboxHead" />
+        app:layout_constraintTop_toBottomOf="@id/searchResultsBar" />
 
     <!-- Conversation list -->
     <androidx.recyclerview.widget.RecyclerView
@@ -264,7 +283,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tabsDivider" />
 
-    <!-- Empty view -->
+    <!-- Empty view (inbox / archived) -->
     <dev.octoshrimpy.quik.common.widget.QkTextView
         android:id="@+id/empty"
         style="@style/TextSecondary"
@@ -278,6 +297,60 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tabsDivider"
         tools:text="No messages" />
+
+    <!-- Search empty state (shown when search yields no results) -->
+    <LinearLayout
+        android:id="@+id/searchEmptyContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabsDivider">
+
+        <!-- 48×48dp rounded icon container (radius 14dp) -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/rounded_rectangle_14dp"
+            android:backgroundTint="?attr/bubbleColor">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_search_black_24dp"
+                app:tint="?android:attr/textColorSecondary"
+                android:scaleType="fitCenter"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <!-- "No results for 'query'" title (set dynamically in MainActivity) -->
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:id="@+id/searchEmptyTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:gravity="center"
+            android:layout_marginBottom="6dp"
+            tools:text="No results for &quot;flight PNR&quot;" />
+
+        <!-- Subtitle hint -->
+        <dev.octoshrimpy.quik.common.widget.QkTextView
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="@string/search_empty_subtitle"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.5" />
+
+    </LinearLayout>
 
     <!-- Finance Dashboard container (Phase 2) — FinanceController is pushed here -->
     <FrameLayout

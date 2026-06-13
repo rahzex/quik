@@ -217,9 +217,6 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
         // update the SAME row instead of creating duplicates.
         val keyPrefix   = bankName.ifBlank { senderAddress }
         val compositeId = "$keyPrefix:$accountLast4"
-        val balanceVal    = balance
-        val bankNameVal   = bankName
-        val accountTypeVal = accountType
         Realm.getDefaultInstance().use { realm ->
             realm.executeTransaction { r ->
                 val existing = r.where(AccountBalance::class.java)
@@ -230,12 +227,65 @@ class FinanceRepositoryImpl @Inject constructor() : FinanceRepository {
                     id               = compositeId
                     senderPattern    = senderAddress     // keep original sender for reference
                     this.accountLast4 = accountLast4
-                    this.balance     = balanceVal
-                    this.bankName    = bankNameVal.ifBlank { senderAddress }
-                    this.accountType = accountTypeVal
+                    this.balance     = balance
+                    this.bankName    = bankName.ifBlank { senderAddress }
+                    this.accountType = accountType
                     lastUpdated      = ts
                 }
                 r.copyToRealmOrUpdate(obj)
+            }
+        }
+        Timber.v("FinanceRepo: updateAccountBalance compositeId=$keyPrefix:$accountLast4 balance=$balance ts=$ts")
+    }
+
+    override fun applyTransactionDelta(
+        senderAddress: String,
+        accountLast4: String,
+        amount: Double,
+        isDebit: Boolean,
+        ts: Long,
+        bankName: String,
+        accountType: String
+    ) {
+        if (accountLast4.isBlank()) return
+        val keyPrefix   = bankName.ifBlank { senderAddress }
+        val compositeId = "$keyPrefix:$accountLast4"
+        Realm.getDefaultInstance().use { realm ->
+            realm.executeTransaction { r ->
+                val existing = r.where(AccountBalance::class.java)
+                    .equalTo("id", compositeId)
+                    .findFirst()
+                // No-op: if no existing row, we have no baseline balance to delta from.
+                if (existing == null) {
+                    Timber.v("FinanceRepo: applyTransactionDelta — no existing row for $compositeId, skipping")
+                    return@executeTransaction
+                }
+                // No-op: if this message is older than the last update, skip it.
+                if (ts <= existing.lastUpdated) {
+                    Timber.v("FinanceRepo: applyTransactionDelta — ts=$ts <= lastUpdated=${existing.lastUpdated} for $compositeId, skipping")
+                    return@executeTransaction
+                }
+                val newBalance = if (isDebit) {
+                    (existing.balance - amount).coerceAtLeast(0.0)
+                } else {
+                    existing.balance + amount
+                }
+                val updatedBankName = bankName.ifBlank { existing.bankName }.ifBlank { senderAddress }
+                val updatedAcctType = accountType.ifBlank { existing.accountType }
+                val obj = AccountBalance().apply {
+                    id               = compositeId
+                    senderPattern    = senderAddress
+                    this.accountLast4 = accountLast4
+                    this.balance     = newBalance
+                    this.bankName    = updatedBankName
+                    this.accountType = updatedAcctType
+                    lastUpdated      = ts
+                }
+                r.copyToRealmOrUpdate(obj)
+                Timber.v(
+                    "FinanceRepo: applyTransactionDelta ${if (isDebit) "debit" else "credit"}" +
+                    " ₹$amount → $compositeId ${existing.balance} → $newBalance"
+                )
             }
         }
     }

@@ -99,6 +99,34 @@ interface FinanceRepository {
         accountType: String = "Savings A/C"
     )
 
+    /**
+     * Applies a debit or credit delta to an **existing** [AccountBalance] row.
+     *
+     * Called when a transaction SMS carries a known [accountLast4] but does NOT include
+     * an explicit available-balance field (e.g. most UPI debit messages).
+     *
+     * Rules:
+     * - If no [AccountBalance] row exists yet for this account → **no-op** (we have no
+     *   baseline to work from; creating a row with an arbitrary negative value would be
+     *   misleading in the dashboard).
+     * - If a row exists but [ts] ≤ [AccountBalance.lastUpdated] → **no-op** (older message
+     *   must not overwrite a more-recent balance).
+     * - Otherwise: computes `newBalance = existing.balance ∓ amount` (subtract for debit,
+     *   add for credit), clamps to ≥ 0.0, and saves the updated row.
+     *
+     * This method intentionally does NOT override a balance that was set by an explicit
+     * "Avl Bal" field in a newer message — the timestamp guard prevents that.
+     */
+    fun applyTransactionDelta(
+        senderAddress: String,
+        accountLast4: String,
+        amount: Double,
+        isDebit: Boolean,
+        ts: Long,
+        bankName: String = "",
+        accountType: String = "Savings A/C"
+    )
+
     companion object {
         /** Credits at or above this amount in the last 3 days of a month are treated as next-month salary. */
         const val SALARY_THRESHOLD = 10_000.0

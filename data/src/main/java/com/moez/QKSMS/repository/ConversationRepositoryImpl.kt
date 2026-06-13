@@ -198,8 +198,17 @@ class ConversationRepositoryImpl @Inject constructor(
             .findAll())
             .groupBy { message -> message.threadId }
             .filter { (threadId, _) -> conversations.firstOrNull { it.id == threadId } != null }
-            .map { (threadId, messages) -> Pair(conversations.first { it.id == threadId }, messages.size) }
-            .map { (conversation, messages) -> SearchResult(searchQuery, conversation, messages) }
+            .map { (threadId, matchingMessages) ->
+                val conversation = conversations.first { it.id == threadId }
+                // Pick the most-recent message that actually contains the query as the preview snippet
+                val bestMsg = matchingMessages.sortedByDescending { it.date }
+                    .firstOrNull { msg ->
+                        msg.body.contains(searchQuery, ignoreCase = true) ||
+                        msg.parts.any { part -> part.text?.contains(searchQuery, ignoreCase = true) == true }
+                    }
+                val snippetText = bestMsg?.getSummary() ?: conversation.snippet ?: ""
+                SearchResult(searchQuery, conversation, matchingMessages.size, snippetText)
+            }
             .sortedByDescending { result -> result.messages }
             .toList()
 
@@ -207,8 +216,8 @@ class ConversationRepositoryImpl @Inject constructor(
 
         return conversations
             .filter { conversation -> conversationFilter.filter(conversation, searchQuery) }
-            .map {
-                    conversation -> SearchResult(searchQuery, conversation, 0)
+            .map { conversation ->
+                SearchResult(searchQuery, conversation, 0, conversation.snippet ?: "")
             } + messagesByConversation
     }
 

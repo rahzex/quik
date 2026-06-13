@@ -271,4 +271,15 @@ class Preferences @Inject constructor(
      * Prevents the worker from running on every subsequent launch.
      */
     val parsedTransactionsV1Done: Preference<Boolean> = rxPrefs.getBoolean("parsed_transactions_v1_done", false)
+
+    /**
+     * Phase 2 delta-rebuild flag: set to true after [ParseAllTransactionsWorker] has
+     * completed Phase 2 (replaying all [ParsedTransaction] rows to apply ±delta updates
+     * to [AccountBalance] rows that were stuck at their last explicit-balance value).
+     *
+     * Introduced alongside the balance-delta fix. Existing users will have this flag
+     * unset (false), triggering a one-time rebuild on the next app launch so that
+     * account balances in the Finance Dashboard reflect all historical debits/credits.
+     */
+    val parsedTransactionsV2Done: Preference<Boolean> = rxPrefs.getBoolean("parsed_transactions_v2_done", false)
 }

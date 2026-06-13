@@ -300,7 +300,7 @@ class MainViewModel @Inject constructor(
         view.queryChangedIntent
                 .debounce(200, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .map { query -> query.trim() }
+                .map { query -> query.trim().toString() }
                 .withLatestFrom(state) { query, state ->
                     if (query.isEmpty() && state.page is Searching) {
                         newState { copy(page = Inbox(data = conversationRepo.getConversations(prefs.unreadAtTop.get()))) }
@@ -309,16 +309,16 @@ class MainViewModel @Inject constructor(
                 }
                 .filter { query -> query.length >= 2 }
                 .distinctUntilChanged()
-                .doOnNext {
+                .doOnNext { query ->
                     newState {
                         val page = (page as? Searching) ?: Searching()
-                        copy(page = page.copy(loading = true))
+                        copy(page = page.copy(loading = true, query = query))
                     }
                 }
                 .observeOn(Schedulers.io())
-                .map(conversationRepo::searchConversations)
+                .map { query -> Pair(query, conversationRepo.searchConversations(query)) }
                 .autoDisposable(view.scope())
-                .subscribe { data -> newState { copy(page = Searching(loading = false, data = data)) } }
+                .subscribe { (query, data) -> newState { copy(page = Searching(loading = false, data = data, query = query)) } }
 
         view.activityResumedIntent
                 .filter { resumed -> !resumed }

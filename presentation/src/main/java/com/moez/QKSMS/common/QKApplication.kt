@@ -144,16 +144,17 @@ class QKApplication : Application(), HasActivityInjector, HasBroadcastReceiverIn
         // ParseAllTransactionsWorker needs TRANSACTIONS-categorised messages to exist, so
         // it must always run AFTER categorisation, never in parallel.
         //
-        // Condition: run if either one-time job hasn't completed yet.
-        //   • !categorizedV3Done  → brand-new install, or upgrade that requires re-categorisation
-        //   • !parsedTransactionsV1Done → upgrade from pre-Phase-2 build (categorised but not parsed)
+        // Condition: run if any one-time job hasn't completed yet.
+        //   • !categorizedV3Done             → brand-new install, or upgrade needing re-categorisation
+        //   • !parsedTransactionsV1Done       → upgrade from pre-Phase-2 build (categorised but not parsed)
+        //   • !parsedTransactionsV2Done       → upgrade to the balance-delta fix; runs rebuild once
         //
         // For a fresh install the chain will find no messages (sync hasn't happened yet).
         // The post-sync subscription below re-enqueues the chain once sync completes, at
         // which point all historical messages exist and will be correctly categorised then parsed.
         //
         // WorkManager MUST be initialized (above) before we can enqueue work.
-        if (!prefs.categorizedV3Done.get() || !prefs.parsedTransactionsV1Done.get()) {
+        if (!prefs.categorizedV3Done.get() || !prefs.parsedTransactionsV1Done.get() || !prefs.parsedTransactionsV2Done.get()) {
             CategorizeAllMessagesWorker.enqueue(applicationContext)
         }
 

@@ -1295,6 +1295,226 @@ body::before {
 }
 .composer-meta span.accent { color: var(--accent); }
 
+
+/* ── Search screen ── */
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.search-input-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface3);
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  padding: 9px 12px;
+}
+
+.search-input-inner svg {
+  width: 15px; height: 15px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.search-input-cursor {
+  font-size: 13px; color: var(--text-2);
+  flex: 1;
+  display: flex; align-items: center; gap: 1px;
+}
+
+.cursor-blink {
+  width: 1.5px; height: 14px;
+  background: var(--accent);
+  animation: blink 1s step-end infinite;
+  border-radius: 1px;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.search-cancel {
+  font-size: 13px; font-weight: 500;
+  color: var(--accent); cursor: pointer;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* filter chips */
+.search-filters {
+  display: flex;
+  gap: 6px;
+  padding: 9px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.search-chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  white-space: nowrap; cursor: pointer;
+  border: 1px solid var(--border-md);
+  background: var(--surface2);
+  color: var(--text-2);
+  transition: all 0.15s;
+}
+
+.search-chip.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chip-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%; flex-shrink: 0;
+}
+
+/* recent searches */
+.search-section-lbl {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-3); padding: 11px 16px 5px;
+}
+
+.recent-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+
+.recent-row:hover { background: var(--surface2); }
+
+.recent-icon {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--surface3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.recent-icon svg {
+  width: 14px; height: 14px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.recent-text {
+  flex: 1;
+  font-size: 13px; color: var(--text-2);
+}
+
+.recent-clear svg {
+  width: 13px; height: 13px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* search results */
+.result-row {
+  display: flex; align-items: flex-start;
+  gap: 11px; padding: 11px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.result-av {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 500;
+  font-family: 'Geist Mono', monospace;
+  flex-shrink: 0;
+}
+
+.result-body { flex: 1; min-width: 0; }
+
+.result-top {
+  display: flex; justify-content: space-between;
+  align-items: baseline; margin-bottom: 2px;
+}
+
+.result-sender {
+  font-size: 13px; font-weight: 500;
+  color: var(--text);
+}
+
+.result-time {
+  font-size: 10px; color: var(--text-3);
+  font-family: 'Geist Mono', monospace;
+}
+
+.result-preview {
+  font-size: 12px; color: var(--text-2);
+  line-height: 1.5; font-weight: 300;
+}
+
+/* highlight matched text */
+.result-highlight {
+  background: rgba(26,86,219,0.12);
+  color: var(--accent);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .result-highlight {
+  background: rgba(232,232,232,0.12);
+  color: var(--accent);
+}
+
+.result-tag {
+  display: inline-block;
+  font-size: 9px; font-weight: 500;
+  padding: 1.5px 6px; border-radius: 4px;
+  margin-bottom: 3px;
+  font-family: 'Geist Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+/* empty / no results */
+.search-empty {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 32px 20px;
+}
+
+.search-empty-icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  background: var(--surface3);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.search-empty-icon svg {
+  width: 22px; height: 22px;
+  stroke: var(--text-3); fill: none;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.search-empty-title {
+  font-size: 14px; font-weight: 500;
+  color: var(--text); letter-spacing: -0.01em;
+}
+
+.search-empty-sub {
+  font-size: 12px; color: var(--text-2);
+  text-align: center; line-height: 1.5; font-weight: 300;
+}
+
 </style>
 </head>
 <body>
@@ -3085,6 +3305,320 @@ body::before {
         </div>
       </div>
       <div class="screen-lbl">All Credits</div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════
+         SEARCH SCREENS
+    ══════════════════════════════════════ -->
+
+    <!-- PHONE: SEARCH EMPTY STATE (just opened) -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;">
+
+          <!-- search bar -->
+          <div class="search-input-wrap">
+            <div class="search-input-inner">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <div class="search-input-cursor">
+                <span style="color:var(--text-3);">Search messages…</span>
+                <div class="cursor-blink"></div>
+              </div>
+            </div>
+            <div class="search-cancel">Cancel</div>
+          </div>
+
+          <!-- filter chips -->
+          <div class="search-filters">
+            <div class="search-chip active">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              All
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:#7b1fa2;"></div>Personal
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--green-text);"></div>Txn
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--amber-text);"></div>Promo
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--purple-text);"></div>OTP
+            </div>
+          </div>
+
+          <!-- recent searches -->
+          <div class="search-section-lbl">Recent searches</div>
+
+          <div class="recent-row">
+            <div class="recent-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span class="recent-text">HDFC debit</span>
+            <div class="recent-clear">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+
+          <div class="recent-row">
+            <div class="recent-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span class="recent-text">Rohit</span>
+            <div class="recent-clear">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+
+          <div class="recent-row">
+            <div class="recent-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span class="recent-text">OTP Paytm</span>
+            <div class="recent-clear">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+
+          <div class="recent-row" style="border-bottom:none;">
+            <div class="recent-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <span class="recent-text">Swiggy 50%</span>
+            <div class="recent-clear">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+          </div>
+
+          <!-- people -->
+          <div class="search-section-lbl">People</div>
+          <div style="display:flex;gap:14px;padding:8px 16px 12px;overflow-x:auto;scrollbar-width:none;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+              <div style="width:44px;height:44px;border-radius:50%;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;">R</div>
+              <span style="font-size:10px;color:var(--text-2);">Rohit</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+              <div style="width:44px;height:44px;border-radius:50%;background:var(--green-bg);color:var(--green-text);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;">M</div>
+              <span style="font-size:10px;color:var(--text-2);">Maa</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+              <div style="width:44px;height:44px;border-radius:50%;background:var(--purple-bg);color:var(--purple-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;font-family:'Geist Mono',monospace;">HDFC</div>
+              <span style="font-size:10px;color:var(--text-2);">HDFC</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+              <div style="width:44px;height:44px;border-radius:50%;background:var(--amber-bg);color:var(--amber-text);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;font-family:'Geist Mono',monospace;">JIO</div>
+              <span style="font-size:10px;color:var(--text-2);">Jio</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;">
+              <div style="width:44px;height:44px;border-radius:50%;background:var(--surface3);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;font-family:'Geist Mono',monospace;">SWG</div>
+              <span style="font-size:10px;color:var(--text-2);">Swiggy</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Search · empty</div>
+    </div>
+
+    <!-- PHONE: SEARCH RESULTS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;">
+
+          <!-- search bar with typed query -->
+          <div class="search-input-wrap">
+            <div class="search-input-inner">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <div class="search-input-cursor">
+                <span style="font-size:13px;color:var(--text);">debit</span>
+                <div class="cursor-blink"></div>
+              </div>
+              <div style="cursor:pointer;">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </div>
+            </div>
+            <div class="search-cancel">Cancel</div>
+          </div>
+
+          <!-- filter chips — Txn active -->
+          <div class="search-filters">
+            <div class="search-chip">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--text-2);fill:none;stroke-width:2;stroke-linecap:round;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              All
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:#7b1fa2;"></div>Personal
+            </div>
+            <div class="search-chip active">
+              <div class="chip-dot" style="background:var(--accent);"></div>Txn
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--amber-text);"></div>Promo
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--purple-text);"></div>OTP
+            </div>
+          </div>
+
+          <!-- results count -->
+          <div style="padding:8px 16px;font-size:11px;color:var(--text-3);background:var(--surface2);border-bottom:1px solid var(--border);">
+            6 results for "<span style="color:var(--text);font-weight:500;">debit</span>"
+          </div>
+
+          <!-- results list -->
+          <div style="flex:1;overflow-y:auto;background:var(--surface2);">
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">HDFC</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-HDFCBK</span>
+                  <span class="result-time">Today</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX4821 <span class="result-highlight">debit</span>ed ₹4,200 on 23-May via UPI ref 428192811.</div>
+              </div>
+            </div>
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">ICICI</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-ICICIB</span>
+                  <span class="result-time">May 22</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX9934 <span class="result-highlight">debit</span>ed ₹2,399 on 22-May via NetBanking.</div>
+              </div>
+            </div>
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">HDFC</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-HDFCBK</span>
+                  <span class="result-time">May 20</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX4821 <span class="result-highlight">debit</span>ed ₹8,342 on 20-May. Card payment AutoPay.</div>
+              </div>
+            </div>
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">ICICI</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-ICICIB</span>
+                  <span class="result-time">May 18</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX9934 <span class="result-highlight">debit</span>ed ₹599 on 18-May via UPI. Jio Recharge.</div>
+              </div>
+            </div>
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">HDFC</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-HDFCBK</span>
+                  <span class="result-time">May 15</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX4821 <span class="result-highlight">debit</span>ed ₹1,820 on 15-May. Electricity bill NEFT.</div>
+              </div>
+            </div>
+
+            <div class="result-row">
+              <div class="result-av" style="background:var(--surface3);color:var(--text-2);font-size:9px;">HDFC</div>
+              <div class="result-body">
+                <div class="result-top">
+                  <span class="result-sender">VM-HDFCBK</span>
+                  <span class="result-time">May 10</span>
+                </div>
+                <div class="result-tag" style="background:var(--green-bg);color:var(--green-text);">Transaction</div>
+                <div class="result-preview">Acct XX4821 <span class="result-highlight">debit</span>ed ₹5,720 on 10-May via UPI ref 918273645.</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Search · results</div>
+    </div>
+
+    <!-- PHONE: SEARCH — NO RESULTS -->
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="screen" style="padding:0;min-height:680px;display:flex;flex-direction:column;">
+
+          <!-- search bar -->
+          <div class="search-input-wrap">
+            <div class="search-input-inner">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <div class="search-input-cursor">
+                <span style="font-size:13px;color:var(--text);">flight PNR</span>
+                <div class="cursor-blink"></div>
+              </div>
+              <div style="cursor:pointer;">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text-3);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </div>
+            </div>
+            <div class="search-cancel">Cancel</div>
+          </div>
+
+          <!-- filter chips — all -->
+          <div class="search-filters">
+            <div class="search-chip active">
+              <svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              All
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:#7b1fa2;"></div>Personal
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--green-text);"></div>Txn
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--amber-text);"></div>Promo
+            </div>
+            <div class="search-chip">
+              <div class="chip-dot" style="background:var(--purple-text);"></div>OTP
+            </div>
+          </div>
+
+          <!-- no results -->
+          <div class="search-empty">
+            <div class="search-empty-icon">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </div>
+            <div class="search-empty-title">No results for "flight PNR"</div>
+            <div class="search-empty-sub">Try a different keyword, sender name, or switch categories using the filters above.</div>
+          </div>
+
+          <!-- suggestions -->
+          <div style="padding:0 16px 16px;margin-top:auto;">
+            <div style="font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;">Try searching for</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;">
+              <div style="padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border-md);font-size:12px;color:var(--text-2);cursor:pointer;">PNR</div>
+              <div style="padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border-md);font-size:12px;color:var(--text-2);cursor:pointer;">IndiGo</div>
+              <div style="padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border-md);font-size:12px;color:var(--text-2);cursor:pointer;">flight booking</div>
+              <div style="padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--border-md);font-size:12px;color:var(--text-2);cursor:pointer;">6E-441</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="screen-lbl">Search · no results</div>
     </div>
 
   </div><!-- /phones -->

@@ -24,6 +24,10 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -426,12 +430,14 @@ class MainActivity : QkThemedActivity(), MainView {
         conversationsAdapter.emptyView = binding.empty.takeIf {
             state.page is Inbox || state.page is Archived
         }
-        searchAdapter.emptyView = binding.empty.takeIf { state.page is Searching }
+        // Search empty state is manually managed in the Searching branch below
 
         when (state.page) {
             is Inbox -> {
                 binding.recyclerView.isVisible = true
                 binding.financeContainer.isVisible = false
+                binding.searchResultsBar.isVisible = false
+                binding.searchEmptyContainer.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
@@ -448,12 +454,43 @@ class MainActivity : QkThemedActivity(), MainView {
                     binding.recyclerView.adapter = searchAdapter
                 searchAdapter.data = state.page.data ?: listOf()
                 itemTouchHelper.attachToRecyclerView(null)
-                binding.empty.setText(R.string.inbox_search_empty_text)
+
+                // Results count bar
+                val resultData = state.page.data
+                val searchQuery = state.page.query
+                if (resultData != null && searchQuery.isNotEmpty()) {
+                    val countText = SpannableStringBuilder()
+                    countText.append("${resultData.size} results for ")
+                    val qStart = countText.length
+                    countText.append("\"$searchQuery\"")
+                    val accent = resolveThemeColor(android.R.attr.textColorPrimary)
+                    countText.setSpan(StyleSpan(android.graphics.Typeface.BOLD), qStart, countText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    countText.setSpan(ForegroundColorSpan(accent), qStart, countText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    binding.searchResultsBar.text = countText
+                    binding.searchResultsBar.isVisible = true
+                } else {
+                    binding.searchResultsBar.isVisible = false
+                }
+
+                // Search-specific empty state (manually managed — do not use searchAdapter.emptyView)
+                searchAdapter.emptyView = null
+                binding.empty.isVisible = false
+                if (resultData != null && resultData.isEmpty()) {
+                    binding.searchEmptyContainer.isVisible = true
+                    binding.searchEmptyTitle.text = if (searchQuery.isNotEmpty())
+                        "No results for \"$searchQuery\""
+                    else
+                        getString(R.string.inbox_search_empty_text)
+                } else {
+                    binding.searchEmptyContainer.isVisible = false
+                }
             }
 
             is Archived -> {
                 binding.recyclerView.isVisible = true
                 binding.financeContainer.isVisible = false
+                binding.searchResultsBar.isVisible = false
+                binding.searchEmptyContainer.isVisible = false
                 if (binding.recyclerView.adapter !== conversationsAdapter)
                     binding.recyclerView.adapter = conversationsAdapter
                 conversationsAdapter.updateData(state.page.data)
@@ -466,6 +503,8 @@ class MainActivity : QkThemedActivity(), MainView {
                 binding.financeContainer.isVisible = true
                 binding.inboxHead.isVisible = false
                 binding.tabsDivider.isVisible = false
+                binding.searchResultsBar.isVisible = false
+                binding.searchEmptyContainer.isVisible = false
                 // Push FinanceController once; Conductor keeps it alive across renders.
                 if (!financeRouter.hasRootController()) {
                     financeRouter.setRoot(

@@ -49,7 +49,8 @@ data class Inbox(
 
 data class Searching(
     val loading: Boolean = false,
-    val data: List<SearchResult>? = null
+    val data: List<SearchResult>? = null,
+    val query: String = ""
 ) : MainPage()
 
 // Finance placeholder — full dashboard in Phase 2
