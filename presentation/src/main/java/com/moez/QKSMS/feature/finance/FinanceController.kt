@@ -5,7 +5,6 @@
  */
 package dev.octoshrimpy.quik.feature.finance
 
-import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -84,6 +83,12 @@ class FinanceController : QkController<
             "Jul","Aug","Sep","Oct","Nov","Dec")
         months.clear(); monthPills.clear()
         binding.monthSwitcher.removeAllViews()
+        val density = activity!!.resources.displayMetrics.density
+        // HTML spec: padding: 3px 9px → 9dp horizontal, 3dp vertical
+        val hPad = (9 * density).toInt()
+        val vPad = (3 * density).toInt()
+        // HTML spec: gap: 2px → 2dp between pills
+        val gap  = (2 * density).toInt()
         for (offset in -2..0) {
             val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
             val y = cal.get(Calendar.YEAR)
@@ -91,14 +96,17 @@ class FinanceController : QkController<
             months.add(Pair(y, m))
             val pill = TextView(activity).apply {
                 text = monthNames[m - 1]
-                textSize = 11f
-                setPaddingRelative(18, 6, 18, 6)
-                background = ContextCompat.getDrawable(context, R.drawable.rounded_rectangle_8dp)
+                textSize = 10.5f
+                // No background for inactive pills — set in render()
+                setPaddingRelative(hPad, vPad, hPad, vPad)
                 setOnClickListener { monthSubject.onNext(Pair(y, m)) }
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                )
+                ).also { lp ->
+                    // Add right gap between pills (not after the last one)
+                    if (offset < 0) lp.marginEnd = gap
+                }
             }
             monthPills.add(pill)
             binding.monthSwitcher.addView(pill)
@@ -114,9 +122,18 @@ class FinanceController : QkController<
 
         months.forEachIndexed { i, (y, m) ->
             val active = y == state.selectedYear && m == state.selectedMonth
-            monthPills.getOrNull(i)?.setTextColor(
-                ContextCompat.getColor(activity!!, if (active) R.color.tools_theme else android.R.color.darker_gray)
-            )
+            val pill = monthPills.getOrNull(i) ?: return@forEachIndexed
+            if (active) {
+                // HTML spec .month-opt.on: surface bg, 1dp border, accent color, weight 500
+                pill.background = ContextCompat.getDrawable(activity!!, R.drawable.finance_month_pill_active_bg)
+                pill.setTextColor(ContextCompat.getColor(activity!!, R.color.accent))
+                pill.typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
+            } else {
+                // HTML spec .month-opt: transparent bg, text-2 color, weight 400
+                pill.background = null
+                pill.setTextColor(ContextCompat.getColor(activity!!, R.color.text_secondary))
+                pill.typeface = android.graphics.Typeface.DEFAULT
+            }
         }
 
         binding.statSpent.text    = fmt.format(state.totalSpent)

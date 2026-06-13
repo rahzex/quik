@@ -24,13 +24,12 @@
     android:paddingBottom="4dp"
     android:minHeight="56dp">
 
-    <!-- Category icon chip: 40×40dp rounded square -->
+    <!-- Category icon chip: 40×40dp, no background — icon is tinted with category colour -->
     <FrameLayout
         android:id="@+id/notif_icon_chip"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginEnd="10dp"
-        android:background="@drawable/rounded_rectangle_8dp">
+        android:layout_marginEnd="10dp">
 
         <ImageView
             android:id="@+id/notif_icon"
@@ -95,7 +94,7 @@
                 android:ellipsize="end"
                 android:textColor="@color/text_secondary" />
 
-            <!-- Category badge pill — hidden for ALL/PERSONAL when no badge needed -->
+            <!-- Category badge pill — hidden for ALL/PERSONAL when no badge needed; no background, coloured text only -->
             <TextView
                 android:id="@+id/notif_badge"
                 android:layout_width="wrap_content"
@@ -107,7 +106,6 @@
                 android:paddingBottom="2dp"
                 android:textSize="10sp"
                 android:textStyle="bold"
-                android:background="@drawable/rounded_rectangle_4dp"
                 android:visibility="gone" />
 
         </LinearLayout>

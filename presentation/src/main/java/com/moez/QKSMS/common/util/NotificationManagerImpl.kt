@@ -197,12 +197,7 @@ class NotificationManagerImpl @Inject constructor(
         val textSecondaryColor = ContextCompat.getColor(
             context, if (isNight) R.color.textSecondaryDark else R.color.textSecondary)
 
-        // Icon chip background color
-        rv.setInt(
-            R.id.notif_icon_chip, "setBackgroundColor",
-            ContextCompat.getColor(context, spec.chipBgColorRes)
-        )
-        // Icon drawable tinted with fg color
+        // Icon chip — no background, just tint the icon with the category fg colour
         rv.setImageViewResource(R.id.notif_icon, spec.iconRes)
         rv.setInt(
             R.id.notif_icon, "setColorFilter",
@@ -223,14 +218,10 @@ class NotificationManagerImpl @Inject constructor(
         rv.setTextViewText(R.id.notif_preview, previewText)
         rv.setTextColor(R.id.notif_preview, textSecondaryColor)
 
-        // Badge pill
+        // Badge pill — no background, coloured text only
         if (spec.showBadge) {
             rv.setViewVisibility(R.id.notif_badge, View.VISIBLE)
             rv.setTextViewText(R.id.notif_badge, context.getString(spec.badgeLabelRes))
-            rv.setInt(
-                R.id.notif_badge, "setBackgroundColor",
-                ContextCompat.getColor(context, spec.badgeBgColorRes)
-            )
             rv.setTextColor(R.id.notif_badge, ContextCompat.getColor(context, spec.badgeFgColorRes))
         } else {
             rv.setViewVisibility(R.id.notif_badge, View.GONE)
@@ -261,11 +252,7 @@ class NotificationManagerImpl @Inject constructor(
         val textSecondaryColor = ContextCompat.getColor(
             context, if (isNight) R.color.textSecondaryDark else R.color.textSecondary)
 
-        // Icon chip
-        rv.setInt(
-            R.id.notif_otp_icon_chip, "setBackgroundColor",
-            ContextCompat.getColor(context, spec.chipBgColorRes)
-        )
+        // Icon chip — no background, just tint the icon with the category fg colour
         rv.setImageViewResource(R.id.notif_otp_icon, spec.iconRes)
         rv.setInt(
             R.id.notif_otp_icon, "setColorFilter",
@@ -297,12 +284,11 @@ class NotificationManagerImpl @Inject constructor(
             rv.setViewVisibility(R.id.notif_otp_expiry, View.GONE)
         }
 
-        // Digit views — show as many as the OTP has digits
+        // Digit views — show as many as the OTP has digits; no box background, just coloured text
         val digitViews = listOf(
             R.id.notif_otp_d1, R.id.notif_otp_d2, R.id.notif_otp_d3, R.id.notif_otp_d4,
             R.id.notif_otp_d5, R.id.notif_otp_d6, R.id.notif_otp_d7, R.id.notif_otp_d8
         )
-        val chipBg  = ContextCompat.getColor(context, spec.chipBgColorRes)
         val chipFg  = ContextCompat.getColor(context, spec.chipFgColorRes)
 
         digitViews.forEachIndexed { index, viewId ->
@@ -310,14 +296,14 @@ class NotificationManagerImpl @Inject constructor(
             if (ch != null) {
                 rv.setViewVisibility(viewId, View.VISIBLE)
                 rv.setTextViewText(viewId, ch.toString())
-                rv.setInt(viewId, "setBackgroundColor", chipBg)
                 rv.setTextColor(viewId, chipFg)
             } else {
                 rv.setViewVisibility(viewId, View.GONE)
             }
         }
 
-        // Copy button
+        // Copy button — keep background so it reads as a button
+        val chipBg = ContextCompat.getColor(context, spec.chipBgColorRes)
         rv.setInt(R.id.notif_otp_copy_btn, "setBackgroundColor", chipBg)
         rv.setTextColor(R.id.notif_otp_copy_btn, chipFg)
         val copyIntent = Intent(context, CopyOtpReceiver::class.java).apply {
@@ -526,8 +512,6 @@ class NotificationManagerImpl @Inject constructor(
                     )
                 )
                 noneRv.setViewVisibility(R.id.notif_badge, View.GONE)
-                noneRv.setInt(R.id.notif_icon_chip, "setBackgroundColor",
-                    ContextCompat.getColor(context, R.color.cat_default_bg))
                 noneRv.setImageViewResource(R.id.notif_icon, R.drawable.ic_chat_bubble_outline_24dp)
                 noneRv.setInt(R.id.notif_icon, "setColorFilter",
                     ContextCompat.getColor(context, R.color.cat_default_fg))

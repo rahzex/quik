@@ -48,14 +48,13 @@
                     android:letterSpacing="-0.03"
                     android:textColor="?android:attr/textColorPrimary" />
 
-                <!-- Month pill switcher -->
+                <!-- Month pill switcher — 20dp radius, surface3 fill, 1dp border, 3dp inner padding -->
                 <LinearLayout
                     android:id="@+id/monthSwitcher"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:background="@drawable/rounded_rectangle_8dp"
-                    android:backgroundTint="?attr/bubbleColor"
+                    android:background="@drawable/finance_month_switcher_bg"
                     android:padding="3dp" />
 
             </LinearLayout>
