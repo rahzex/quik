@@ -30,8 +30,8 @@ import javax.inject.Singleton
  * Tier 1 — 13 STRUCTURAL patterns (dispatched in order, first match wins).
  *   Each pattern matches a well-known SMS sentence structure used across
  *   Indian banks, regardless of which bank sent it. No bank names appear
- *   in any regex. The patterns were derived empirically from real corpus
- *   data in sms_backup_categorized.json.
+ *   in any regex. The patterns were derived empirically from real-world
+ *   SMS corpus data.
  *
  * Tier 2 — Universal GENERIC fallback.
  *   If no structural pattern matches, try to extract amount + direction

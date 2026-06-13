@@ -2,7 +2,6 @@
  * Copyright (C) 2026 QUIK
  *
  * Unit tests for TransactionParserImpl.
- * All test bodies are real SMS samples from sms_backup_categorized.json.
  * No bank names appear in patterns — purely structural matching.
  */
 package dev.octoshrimpy.quik.categorization

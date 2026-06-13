@@ -1,0 +1,305 @@
+/*
+ * Copyright (C) 2026 QUIK
+ *
+ * This file is part of QUIK.
+ *
+ * QUIK is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * QUIK is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with QUIK.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package dev.octoshrimpy.quik.categorization
+
+import dev.octoshrimpy.quik.model.MessageCategory
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/**
+ * Hardcoded regression tests for [SmsCategorizerImpl].
+ *
+ * Each test covers a real-world edge-case sender/body combination that was
+ * previously identified as tricky. Tests are fully self-contained — no
+ * external test-asset files are required.
+ */
+class SmsCategorizerRegressionTest {
+
+    private val categorizer = SmsCategorizerImpl()
+
+    // ── TRANSACTIONS ─────────────────────────────────────────────────────────
+
+    /**
+     * HDFC Bank sends with MANY different sender ID formats — all without hyphen
+     * in the older TRAI format. This verifies the no-hyphen pattern works.
+     */
+    @Test
+    fun `HDFC Bank no-hyphen sender formats are classified as TRANSACTIONS`() {
+        val hdfcSenders = listOf(
+            "ADHDFCBK", "VMHDFCBK", "JMHDFCBK", "AXHDFCBK", "JXHDFCBK",
+            "VDHDFCBK", "JDHDFCBK", "ADHDFCBKS", "VMHDFCBKS", "JMHDFCBKS",
+            "AXHDFCBKS", "JXHDFCBKS", "JDHDFCBKS"
+        )
+        val body = "Rs.5,790.00 transferred from HDFC Bank A/C *7472 to SBI cards on 29-02"
+        hdfcSenders.forEach { sender ->
+            assertEquals(
+                "Sender $sender should be TRANSACTIONS",
+                MessageCategory.TRANSACTIONS,
+                categorizer.categorize(sender, body)
+            )
+        }
+    }
+
+    @Test
+    fun `SBI Credit Card no-hyphen senders are classified as TRANSACTIONS`() {
+        val sbiSenders = listOf("VMSBICRD", "JDSBICRD", "VKSBICRD", "CPSBICRD", "AXSBICRD", "ADSBICRD")
+        val body = "Rs.3,052.28 spent on your SBI Credit Card ending 8987 at REL RETAIL LTD"
+        sbiSenders.forEach { sender ->
+            assertEquals(
+                "Sender $sender should be TRANSACTIONS",
+                MessageCategory.TRANSACTIONS,
+                categorizer.categorize(sender, body)
+            )
+        }
+    }
+
+    @Test
+    fun `HDFC Bank hyphen sender formats are classified as TRANSACTIONS`() {
+        val hdfcHyphenSenders = listOf("AD-HDFCBK-S", "VM-HDFCBK-S", "VM-HDFCBK-T", "JM-HDFCBK-S", "JX-HDFCBK-S", "AX-HDFCBK-S")
+        val body = "Sent Rs.850.00 From HDFC Bank A/C *7472 To GEETANJALI ROY On 26/09/25"
+        hdfcHyphenSenders.forEach { sender ->
+            assertEquals(
+                "Sender $sender should be TRANSACTIONS",
+                MessageCategory.TRANSACTIONS,
+                categorizer.categorize(sender, body)
+            )
+        }
+    }
+
+    @Test
+    fun `PNB bank transaction no-hyphen sender is TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "VKPNBSMS",
+            body    = "Your a/c XX5095 is credited for INR 5000.00 on 27-01-24 through UPI. Available Bal INR 5648.25"
+        )
+        assertEquals(MessageCategory.TRANSACTIONS, result)
+    }
+
+    @Test
+    fun `PhonePe PHONPE entity code (not PHONEP) is TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "JMPHONPE",
+            body    = "SBIMOPS has requested money from you on PhonePe. Rs.15 will be debited from your account."
+        )
+        assertEquals(MessageCategory.TRANSACTIONS, result)
+    }
+
+    @Test
+    fun `ICICI SBI confirmed payment receipt is TRANSACTIONS not BILL_REMINDER`() {
+        // Completed payment — must NOT be re-classified as BILL_REMINDER
+        val result = categorizer.categorize(
+            address = "AD-ICICIT-S",
+            body    = "Payment of Rs 6,167.80 has been received on your ICICI Bank Credit Card XX7004 " +
+                      "through Bharat Bill Payment System on 02-MAR-26."
+        )
+        assertEquals(MessageCategory.TRANSACTIONS, result)
+    }
+
+    // ── OTP ──────────────────────────────────────────────────────────────────
+
+    @Test
+    fun `Ekart delivery OTP is classified as OTP`() {
+        val result = categorizer.categorize(
+            address = "TMEKARTL",
+            body    = "Ekart Update: OTP 672378 for your shipment Goshudh Premium Quality Rag... with tracking id FMPP2324976574."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `Blue Dart delivery OTP is classified as OTP`() {
+        val result = categorizer.categorize(
+            address = "JMBLUDRT",
+            body    = "Your Blue Dart Secure Delivery Code is 371310 and its valid for next 30 minutes."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `ICICI ICICIO sender is always OTP`() {
+        val result = categorizer.categorize(
+            address = "AD-ICICIO-T",
+            body    = "409002 is One-Time Password for INR 605.93 transaction towards AMAZON using ICICI Bank Credit Card."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `Amazon delivery OTP from number sender is OTP`() {
+        val result = categorizer.categorize(
+            address = "57575022",
+            body    = "Please use the OTP-841432 at the time of delivery after checking your Amazon package. Do not share."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `Paytm OTP is detected despite ADiPaytm sender`() {
+        val result = categorizer.categorize(
+            address = "ADiPaytm",
+            body    = "<#> Paytm never calls you asking for OTP. Your Login OTP is 465061. ID: asasK/GTt2i"
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    @Test
+    fun `SBI Credit Card OTP for login is OTP not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "VKSBICRD",
+            body    = "057961 is the OTP for Trxn. of INR 2738.00 at WBSEDCL with your credit card ending 87. OTP valid for 5 min."
+        )
+        assertEquals(MessageCategory.OTP, result)
+    }
+
+    // ── UPDATES ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `Tata Play recharge is UPDATES not TRANSACTIONS`() {
+        // "Rs 200" in body should NOT trigger TRANSACTIONS for a telecom sender
+        val result = categorizer.categorize(
+            address = "TXTPPLAY",
+            body    = "Tata Play ID 1363021658\nRecharge Amt Rs200\nBalance Rs196\nDue date 20-Oct-25"
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `Jio recharge plan expiry is UPDATES not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "JK-JIOPAY-S",
+            body    = "Current Recharge plan Expiring on 07-Nov-25 19:18 Hrs! Plan Name: Voice_448 Jio Number: 7003798088"
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `Paytm login alert ADiPaytm is UPDATES not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "ADiPaytm",
+            body    = "Paytm login detected from a new device at 02:19 AM, 21 Jan. Not you? Report fraud @1800120130"
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `HDFC Bank notification sender VMHDFCBN is UPDATES not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "VMHDFCBN",
+            body    = "Dear Customer, you are eligible for an HDFC Bank Credit Card. Apply now at hdfcbank.com"
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `Bandhan Bank security alert is UPDATES not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "JMBDNSMS",
+            body    = "Beware! Bandhan Bank will never ask for your banking details via SMS or calls. Never share such details."
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `BSNL plan expiry is UPDATES`() {
+        val result = categorizer.categorize(
+            address = "BVBSNLIN",
+            body    = "Dear Customer, 365_freebies will expire on 02/05/2024. Manage your BSNL mobile with Selfcare app."
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `Weather advisory from NDMA is UPDATES`() {
+        val result = categorizer.categorize(
+            address = "BPNDMAEW",
+            body    = "Heavy rainfall is very likely in Cooch Behar district on 11-Jun-2024. NDMA advisory."
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    @Test
+    fun `IRCTC ticket cancellation is UPDATES`() {
+        val result = categorizer.categorize(
+            address = "JXIRCTCi",
+            body    = "PNR 6130033796 ticket cancelled. Amt 290.28 will be refunded within 3-4 days."
+        )
+        assertEquals(MessageCategory.UPDATES, result)
+    }
+
+    // ── BILL_REMINDER ────────────────────────────────────────────────────────
+
+    @Test
+    fun `SBI e-statement payable by date is BILL_REMINDER not TRANSACTIONS`() {
+        val result = categorizer.categorize(
+            address = "VMSBICRD",
+            body    = "E-statement of SBI Credit Card ending XX87 dated 17/07/2024 has been mailed. " +
+                      "If not received, SMS ENRS to 5676791. Total Amt Due Rs 2625; Min Amt Due Rs 200; Payable by 06/08/2024. " +
+                      "Click https://sbicard.com/quickpay"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `HDFC credit card statement due by date is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "JKHDFCBK",
+            body    = "HDFC Bank Credit Card XX2660 Statement: Total due amt: Rs.50,200.00 Min due amt: Rs.2,510.00 Due by:04-03-2025. View statement here:https://hdfcbk.io/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `ICICI total due to be paid by date is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "JDICICIT",
+            body    = "ICICI Bank Credit Card XX7004 Statement is sent to user@email.com. " +
+                      "Total of Rs 5999 or minimum of Rs 300 is due by 02-MAR-25."
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `ICICI Pay Total Amount Due format 2026 is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "AD-ICICIT-S",
+            body    = "Pay Total Amount Due of Rs 3,983.53 or Minimum Amount Due of Rs 440.00 by 30-Apr-26 " +
+                      "towards ICICI Bank Credit Card XX7004. Delay/Non-payment is reported to Credit Bureaus. Ignore if paid."
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `OlaMoney postpaid bill due is BILL_REMINDER not PERSONAL`() {
+        val result = categorizer.categorize(
+            address = "AX-OLAMNY-S",
+            body    = "Your OlaMoney Postpaid bill of Rs.484.00 is due.\nPlease pay before 29-January-2026 to avoid Rs.75.0 late fee.\nPay now: https://shrtsms.in/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+
+    @Test
+    fun `HDFC new statement Pay by DATE format is BILL_REMINDER`() {
+        val result = categorizer.categorize(
+            address = "ADHDFCBKS",
+            body    = "HDFC Bank Credit Card XX2660 Statement:\nTotal due: Rs.6,949.00\nMin.due: Rs.350.00\nPay by 01-09-2025\nView: https://hdfcbk.io/abc"
+        )
+        assertEquals(MessageCategory.BILL_REMINDER, result)
+    }
+}
+
