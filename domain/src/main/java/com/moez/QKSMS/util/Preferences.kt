@@ -282,4 +282,21 @@ class Preferences @Inject constructor(
      * account balances in the Finance Dashboard reflect all historical debits/credits.
      */
     val parsedTransactionsV2Done: Preference<Boolean> = rxPrefs.getBoolean("parsed_transactions_v2_done", false)
+
+    /**
+     * Master switch for the Finance feature.
+     *
+     * When false:
+     *  - The bottom navigation bar is hidden entirely (Messages, Finance, Settings tabs
+     *    all disappear). Settings becomes reachable via the 3-dot overflow icon.
+     *  - [ParseAllTransactionsWorker] skips all processing and returns immediately.
+     *  - [ReceiveSmsWorker] skips real-time transaction parsing for new messages.
+     *  - The Finance tab / FinanceController are never shown.
+     *
+     * When true (default), all Finance features are active.
+     *
+     * Note: SMS categorisation (TRANSACTIONS label) is independent and continues to
+     * work regardless of this toggle.
+     */
+    val financeEnabled: Preference<Boolean> = rxPrefs.getBoolean("finance_enabled", true)
 }

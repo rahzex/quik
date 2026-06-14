@@ -165,6 +165,11 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
             .filter { it.id == R.id.autoCategorize }
             .map { binding.autoCategorize.checkbox?.isChecked != true }
 
+    override fun financeEnabledChanged(): Observable<Boolean> =
+        sharedPreferenceClicks
+            .filter { it.id == R.id.financeEnabled }
+            .map { binding.financeEnabled.checkbox?.isChecked != true }
+
     override fun render(state: SettingsState) {
         binding.theme.findViewById<View>(R.id.themePreview)?.setBackgroundTint(state.theme)
         binding.night.summary = state.nightModeSummary
@@ -213,6 +218,8 @@ class SettingsController : QkController<SettingsControllerBinding, SettingsView,
         binding.disableScreenshots.checkbox?.isChecked = state.disableScreenshotsEnabled
 
         binding.autoCategorize.checkbox?.isChecked = state.autoCategorizeEnabled
+
+        binding.financeEnabled.checkbox?.isChecked = state.financeEnabled
 
         when (state.syncProgress) {
             is SyncRepository.SyncProgress.Idle -> binding.syncingProgress.isVisible = false

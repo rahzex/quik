@@ -114,6 +114,10 @@ class MainViewModel @Inject constructor(
         disposables += ratingManager.shouldShowRating
                 .subscribe { show -> newState { copy(showRating = show) } }
 
+        // Track finance enabled preference so UI can react reactively
+        disposables += prefs.financeEnabled.asObservable()
+                .subscribe { enabled -> newState { copy(financeEnabled = enabled) } }
+
 
         // Migrate the preferences from 2.7.3
         migratePreferences.execute(Unit)
@@ -239,9 +243,21 @@ class MainViewModel @Inject constructor(
                     }
                 }
 
+        // When finance is disabled while on the Finance page, auto-navigate to Inbox
+        prefs.financeEnabled.asObservable()
+                .skip(1)
+                .filter { !it }
+                .withLatestFrom(state) { _, s -> s }
+                .filter { it.page is Finance }
+                .observeOn(AndroidSchedulers.mainThread())
+                .autoDisposable(view.scope())
+                .subscribe {
+                    val data = conversationRepo.getConversationsByCategory(MessageCategory.ALL, prefs.unreadAtTop.get())
+                    newState { copy(page = Inbox(activeCategory = MessageCategory.ALL, data = data)) }
+                }
+
         // Show changelog
-        if (changelogManager.didUpdate()) {
-            if (Locale.getDefault().language.startsWith("en")) {
+        if (changelogManager.didUpdate()) {            if (Locale.getDefault().language.startsWith("en")) {
                 GlobalScope.launch(Dispatchers.Main) {
                     val changelog = changelogManager.getChangelog()
                     changelogManager.markChangelogSeen()
@@ -271,7 +287,11 @@ class MainViewModel @Inject constructor(
             }
 
         // Bottom nav selection
+        // Guard with financeEnabled so that the spurious onNavigationItemSelected event
+        // that Material 1.0.0 fires when BottomNavigationView transitions GONE→VISIBLE
+        // never resets the current page (e.g. cancelling an active search).
         view.bottomNavSelectedIntent
+            .filter { _ -> prefs.financeEnabled.get() }
             .autoDisposable(view.scope())
             .subscribe { itemId ->
                 when (itemId) {

@@ -169,7 +169,7 @@ class ReceiveSmsWorker(appContext: Context, workerParams: WorkerParameters)
         }
 
         // ── Phase 2: Parse financial data from TRANSACTIONS + BILL_REMINDER messages ─────────
-        if (prefs.autoCategorize.get()) {
+        if (prefs.autoCategorize.get() && prefs.financeEnabled.get()) {
             val msgCategory = try {
                 MessageCategory.valueOf(
                     Realm.getDefaultInstance().use { r ->

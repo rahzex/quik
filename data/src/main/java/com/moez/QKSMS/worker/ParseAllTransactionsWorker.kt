@@ -90,6 +90,14 @@ class ParseAllTransactionsWorker(
     override fun doWork(): Result {
         Timber.d("ParseAllTransactionsWorker: started")
 
+        // Skip all finance processing when the Finance feature is disabled.
+        // Do NOT set the parsedTransactionsV*Done flags here so the worker
+        // re-runs correctly if the user later re-enables Finance.
+        if (!prefs.financeEnabled.get()) {
+            Timber.d("ParseAllTransactionsWorker: skipped — Finance feature is disabled")
+            return Result.success()
+        }
+
         return try {
             Realm.getDefaultInstance().use { realm ->
 

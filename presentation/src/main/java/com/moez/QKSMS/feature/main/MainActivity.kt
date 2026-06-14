@@ -131,6 +131,9 @@ class MainActivity : QkThemedActivity(), MainView {
     // Keep track of the active tab view for styling
     private var activeTabView: TextView? = null
 
+    // Tracks whether Finance feature is currently enabled (updated in render())
+    private var isFinanceEnabled = true
+
     // Selection bar state (updated in render() so the overflow popup can read them)
     private var selIsArchived = false
     private var selMarkPinned = true
@@ -179,8 +182,16 @@ class MainActivity : QkThemedActivity(), MainView {
                 R.id.block, R.id.rename).forEach { id ->
                 popup.menu.findItem(id)?.isVisible = false
             }
+            // When bottom nav is hidden (finance disabled), expose Settings via overflow
+            if (!isFinanceEnabled) {
+                popup.menu.add(0, R.id.nav_settings, 0, getString(R.string.title_settings))
+            }
             popup.setOnMenuItemClickListener { item ->
-                optionsItemIntent.onNext(item.itemId)
+                if (item.itemId == R.id.nav_settings) {
+                    navigator.showSettings()
+                } else {
+                    optionsItemIntent.onNext(item.itemId)
+                }
                 true
             }
             popup.show()
@@ -365,6 +376,13 @@ class MainActivity : QkThemedActivity(), MainView {
             finish()
             return
         }
+
+        // Sync finance-enabled flag for use in overflow popup builder
+        isFinanceEnabled = state.financeEnabled
+        // Completely hide the bottom nav (GONE removes layout space and touch targets).
+        // Spurious nav_messages events that Material 1.0.0 fires on GONE→VISIBLE transitions
+        // are suppressed in MainViewModel by filtering bottomNavSelectedIntent.
+        binding.bottomNav.isVisible = state.financeEnabled
 
         val addContact = when (state.page) {
             is Inbox -> state.page.addContact

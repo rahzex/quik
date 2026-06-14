@@ -136,6 +136,19 @@
                 android:layout_marginStart="64dp" />
 
             <dev.octoshrimpy.quik.common.widget.PreferenceView
+                android:id="@+id/financeEnabled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/ic_finance"
+                app:title="@string/settings_finance_enabled_title"
+                app:summary="@string/settings_finance_enabled_summary"
+                app:widget="@layout/settings_switch_widget" />
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                android:layout_marginStart="64dp" />
+
+            <dev.octoshrimpy.quik.common.widget.PreferenceView
                 android:id="@+id/blocking"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

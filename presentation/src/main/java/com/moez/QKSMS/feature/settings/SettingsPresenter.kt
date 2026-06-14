@@ -146,6 +146,9 @@ class SettingsPresenter @Inject constructor(
         disposables += prefs.autoCategorize.asObservable()
             .subscribe { enabled -> newState { copy(autoCategorizeEnabled = enabled) } }
 
+        disposables += prefs.financeEnabled.asObservable()
+            .subscribe { enabled -> newState { copy(financeEnabled = enabled) } }
+
         disposables += syncRepo.syncProgress
                 .sample(16, TimeUnit.MILLISECONDS)
                 .distinctUntilChanged()
@@ -221,6 +224,8 @@ class SettingsPresenter @Inject constructor(
 
                         R.id.autoCategorize -> prefs.autoCategorize.set(!prefs.autoCategorize.get())
 
+                        R.id.financeEnabled -> prefs.financeEnabled.set(!prefs.financeEnabled.get())
+
                         R.id.blocking -> navigator.showBlockedConversations()
 
                         R.id.sync -> syncMessages.execute(Unit)
@@ -232,6 +237,10 @@ class SettingsPresenter @Inject constructor(
         view.autoCategorizeChanged()
             .autoDisposable(view.scope())
             .subscribe { enabled -> prefs.autoCategorize.set(enabled) }
+
+        view.financeEnabledChanged()
+            .autoDisposable(view.scope())
+            .subscribe { enabled -> prefs.financeEnabled.set(enabled) }
 
         view.aboutLongClicks()
                 .map { !prefs.logging.get() }

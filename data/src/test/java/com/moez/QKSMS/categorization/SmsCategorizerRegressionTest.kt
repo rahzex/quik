@@ -302,4 +302,3 @@ class SmsCategorizerRegressionTest {
         assertEquals(MessageCategory.BILL_REMINDER, result)
     }
 }
-

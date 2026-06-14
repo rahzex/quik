@@ -281,6 +281,8 @@
     <string name="settings_category_messaging">Messaging</string>
     <string name="settings_category_otp">OTP</string>
     <string name="settings_category_finance">Finance</string>
+    <string name="settings_finance_enabled_title">Finance Dashboard</string>
+    <string name="settings_finance_enabled_summary">Show finance tab and track transactions</string>
     <string name="settings_category_privacy">Privacy &amp; Security</string>
     <string name="settings_category_backup">Backup</string>
     <string name="settings_blocking_title">Blocked senders</string>

@@ -52,5 +52,6 @@ data class SettingsState(
     val messageLinkHandlingId: Int = 2,
     val disableScreenshotsEnabled: Boolean = false,
     val autoCategorizeEnabled: Boolean = true,
+    val financeEnabled: Boolean = true,
     val syncProgress: SyncRepository.SyncProgress = SyncRepository.SyncProgress.Idle
 )
